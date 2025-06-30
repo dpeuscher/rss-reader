@@ -1,0 +1,84 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Search{% if query %}: {{ query }}{% endif %} - RSS Reader{% endblock %}
+
+{% block body %}
+<div class="main">
+    <div class="sidebar">
+        <div class="add-feed">
+            <h3>Search</h3>
+            <form action="{{ path('app_search') }}" method="get">
+                <input type="text" name="q" placeholder="Search articles..." value="{{ query }}" required>
+                <button type="submit" class="btn">Search</button>
+            </form>
+        </div>
+
+        <h3>My Feeds</h3>
+        <ul class="feed-list">
+            <li>
+                <a href="{{ path('app_home') }}">
+                    All Articles
+                    <span class="feed-count">{{ unreadCount }}</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ path('app_unread') }}">
+                    Unread Articles
+                    <span class="feed-count">{{ unreadCount }}</span>
+                </a>
+            </li>
+            {% for subscription in subscriptions %}
+                <li>
+                    <a href="{{ path('app_feed_view', {id: subscription.feed.id}) }}">
+                        {{ subscription.title }}
+                        {% set feedUnreadCount = subscription.feed.articles|filter(article => not article.isReadByUser(app.user))|length %}
+                        {% if feedUnreadCount > 0 %}
+                            <span class="feed-count">{{ feedUnreadCount }}</span>
+                        {% endif %}
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="content">
+        {% if query %}
+            <h2>Search Results for "{{ query }}"</h2>
+            <p style="color: #666; margin-bottom: 20px;">{{ articles|length }} articles found</p>
+        {% else %}
+            <h2>Search Articles</h2>
+            <p style="color: #666;">Enter a search term to find articles in your subscribed feeds.</p>
+        {% endif %}
+
+        {% if articles|length > 0 %}
+            {% for article in articles %}
+                <div class="article {% if article.isReadByUser(app.user) %}read{% else %}unread{% endif %}" 
+                     data-article="{{ article.id }}">
+                    <div class="article-title">
+                        <a href="{{ path('app_article_view', {id: article.id}) }}" 
+                           onclick="markAsRead({{ article.id }})">
+                            {{ article.title }}
+                        </a>
+                    </div>
+                    <div class="article-meta">
+                        <strong>{{ article.feed.title }}</strong>
+                        {% if article.publishedAt %}
+                            • {{ article.publishedAt|date('M j, Y g:i A') }}
+                        {% endif %}
+                        {% if article.author %}
+                            • by {{ article.author }}
+                        {% endif %}
+                    </div>
+                    {% if article.description %}
+                        <div class="article-description">
+                            {{ article.description|striptags|slice(0, 200) }}{% if article.description|length > 200 %}...{% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        {% elseif query %}
+            <p>No articles found matching your search.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

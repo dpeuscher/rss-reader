@@ -1,0 +1,90 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ article.title }} - RSS Reader{% endblock %}
+
+{% block body %}
+<div class="main">
+    <div class="content">
+        <div style="margin-bottom: 20px;">
+            <a href="{{ path('app_home') }}" style="color: #666; text-decoration: none;">← Back to Articles</a>
+        </div>
+
+        <article>
+            <h1 style="margin-bottom: 20px; color: #333;">{{ article.title }}</h1>
+            
+            <div class="article-meta" style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid #eee;">
+                <strong>{{ article.feed.title }}</strong>
+                {% if article.publishedAt %}
+                    • {{ article.publishedAt|date('F j, Y \a\t g:i A') }}
+                {% endif %}
+                {% if article.author %}
+                    • by {{ article.author }}
+                {% endif %}
+                {% if article.link %}
+                    • <a href="{{ article.link }}" target="_blank" rel="noopener noreferrer">View Original</a>
+                {% endif %}
+            </div>
+
+            <div class="article-content" style="line-height: 1.6; color: #333;">
+                {% if article.content %}
+                    {{ article.content|raw }}
+                {% elseif article.description %}
+                    {{ article.description|raw }}
+                {% else %}
+                    <p>No content available. <a href="{{ article.link }}" target="_blank" rel="noopener noreferrer">Read the full article</a>.</p>
+                {% endif %}
+            </div>
+        </article>
+    </div>
+</div>
+
+<style>
+.article-content img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 20px 0;
+}
+
+.article-content p {
+    margin-bottom: 15px;
+}
+
+.article-content h1, .article-content h2, .article-content h3, .article-content h4, .article-content h5, .article-content h6 {
+    margin: 20px 0 10px 0;
+    color: #333;
+}
+
+.article-content blockquote {
+    border-left: 4px solid #ddd;
+    padding-left: 20px;
+    margin: 20px 0;
+    color: #666;
+    font-style: italic;
+}
+
+.article-content code {
+    background: #f4f4f4;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+}
+
+.article-content pre {
+    background: #f4f4f4;
+    padding: 15px;
+    border-radius: 5px;
+    overflow-x: auto;
+    margin: 20px 0;
+}
+
+.article-content ul, .article-content ol {
+    margin: 15px 0;
+    padding-left: 30px;
+}
+
+.article-content li {
+    margin-bottom: 5px;
+}
+</style>
+{% endblock %}
