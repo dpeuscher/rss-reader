@@ -1,0 +1,105 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}
+    {% if currentFeed %}
+        {{ currentFeed.title }} - RSS Reader
+    {% else %}
+        {% if unreadOnly is defined and unreadOnly %}
+            Unread Articles - RSS Reader
+        {% else %}
+            All Articles - RSS Reader
+        {% endif %}
+    {% endif %}
+{% endblock %}
+
+{% block body %}
+<div class="main">
+    <div class="sidebar">
+        <div class="add-feed">
+            <h3>Add Feed</h3>
+            <form action="{{ path('app_feed_add') }}" method="post">
+                <input type="url" name="feed_url" placeholder="Feed URL" required>
+                <input type="text" name="custom_title" placeholder="Custom title (optional)">
+                <button type="submit" class="btn">Add Feed</button>
+            </form>
+        </div>
+
+        <h3>My Feeds</h3>
+        <ul class="feed-list">
+            <li>
+                <a href="{{ path('app_home') }}" {% if not currentFeed and not (unreadOnly is defined and unreadOnly) %}class="active"{% endif %}>
+                    All Articles
+                    <span class="feed-count">{{ unreadCount }}</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ path('app_unread') }}" {% if not currentFeed and unreadOnly is defined and unreadOnly %}class="active"{% endif %}>
+                    Unread Articles
+                    <span class="feed-count">{{ unreadCount }}</span>
+                </a>
+            </li>
+            {% for subscription in subscriptions %}
+                <li>
+                    <a href="{{ path('app_feed_view', {id: subscription.feed.id}) }}" 
+                       {% if currentFeed and currentFeed.id == subscription.feed.id and not (unreadOnly is defined and unreadOnly) %}class="active"{% endif %}>
+                        {{ subscription.title }}
+                        {% set feedUnreadCount = subscription.feed.articles|filter(article => not article.isReadByUser(app.user))|length %}
+                        {% if feedUnreadCount > 0 %}
+                            <span class="feed-count">{{ feedUnreadCount }}</span>
+                        {% endif %}
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="content">
+        {% if currentFeed %}
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>{{ currentFeed.title }}</h2>
+                <form action="{{ path('app_feed_refresh', {id: currentFeed.id}) }}" method="post" style="display: inline;">
+                    <button type="submit" class="btn btn-small">Refresh</button>
+                </form>
+            </div>
+        {% else %}
+            <h2>
+                {% if unreadOnly is defined and unreadOnly %}
+                    Unread Articles
+                {% else %}
+                    All Articles
+                {% endif %}
+            </h2>
+        {% endif %}
+
+        {% if articles|length > 0 %}
+            {% for article in articles %}
+                <div class="article {% if article.isReadByUser(app.user) %}read{% else %}unread{% endif %}" 
+                     data-article="{{ article.id }}">
+                    <div class="article-title">
+                        <a href="{{ path('app_article_view', {id: article.id}) }}" 
+                           onclick="markAsRead({{ article.id }})">
+                            {{ article.title }}
+                        </a>
+                    </div>
+                    <div class="article-meta">
+                        <strong>{{ article.feed.title }}</strong>
+                        {% if article.publishedAt %}
+                            • {{ article.publishedAt|date('M j, Y g:i A') }}
+                        {% endif %}
+                        {% if article.author %}
+                            • by {{ article.author }}
+                        {% endif %}
+                    </div>
+                    {% if article.description %}
+                        <div class="article-description">
+                            {{ article.description|striptags|slice(0, 200) }}{% if article.description|length > 200 %}...{% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No articles found.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

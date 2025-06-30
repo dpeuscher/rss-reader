@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>{% block title %}RSS Reader{% endblock %}</title>
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>⚫️</text></svg>">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        {% block stylesheets %}
+        <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; }
+            .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+            .header { background: #fff; border-bottom: 1px solid #ddd; padding: 10px 0; margin-bottom: 20px; }
+            .header .container { display: flex; justify-content: space-between; align-items: center; }
+            .logo { font-size: 24px; font-weight: bold; color: #333; text-decoration: none; }
+            .nav { display: flex; gap: 20px; align-items: center; }
+            .nav a { color: #666; text-decoration: none; }
+            .nav a:hover { color: #333; }
+            .main { display: flex; gap: 20px; }
+            .sidebar { width: 250px; background: #fff; padding: 20px; border-radius: 8px; height: fit-content; }
+            .content { flex: 1; background: #fff; padding: 20px; border-radius: 8px; }
+            .feed-list { list-style: none; }
+            .feed-list li { margin-bottom: 10px; }
+            .feed-list a { color: #666; text-decoration: none; padding: 8px 12px; display: block; border-radius: 4px; }
+            .feed-list a:hover, .feed-list a.active { background: #f0f0f0; color: #333; }
+            .feed-count { float: right; background: #007bff; color: white; border-radius: 12px; padding: 2px 8px; font-size: 12px; }
+            .article { border-bottom: 1px solid #eee; padding: 20px 0; }
+            .article:last-child { border-bottom: none; }
+            .article-title { font-size: 18px; margin-bottom: 10px; }
+            .article-title a { color: #333; text-decoration: none; }
+            .article-title a:hover { color: #007bff; }
+            .article-meta { color: #666; font-size: 14px; margin-bottom: 10px; }
+            .article-description { color: #555; line-height: 1.5; }
+            .add-feed { margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #eee; }
+            .add-feed input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 10px; }
+            .btn { background: #007bff; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; }
+            .btn:hover { background: #0056b3; }
+            .btn-small { padding: 4px 8px; font-size: 12px; }
+            .flash-messages { margin-bottom: 20px; }
+            .flash { padding: 10px; border-radius: 4px; margin-bottom: 10px; }
+            .flash.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+            .flash.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+            .form-group { margin-bottom: 15px; }
+            label { display: block; margin-bottom: 5px; font-weight: 500; }
+            input[type="text"], input[type="email"], input[type="password"] { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+            .login-form { max-width: 400px; margin: 50px auto; background: #fff; padding: 30px; border-radius: 8px; }
+            .unread { font-weight: bold; }
+            .read { opacity: 0.7; }
+        </style>
+        {% endblock %}
+    </head>
+    <body>
+        <div class="header">
+            <div class="container">
+                <a href="{{ path('app_home') }}" class="logo">RSS Reader</a>
+                <nav class="nav">
+                    {% if app.user %}
+                        <a href="{{ path('app_home') }}">All Articles</a>
+                        <a href="{{ path('app_unread') }}">Unread</a>
+                        <a href="{{ path('app_search') }}">Search</a>
+                        <span>Hello, {{ app.user.name }}!</span>
+                        <a href="{{ path('app_logout') }}">Logout</a>
+                    {% else %}
+                        <a href="{{ path('app_login') }}">Login</a>
+                        <a href="{{ path('app_register') }}">Register</a>
+                    {% endif %}
+                </nav>
+            </div>
+        </div>
+
+        <div class="container">
+            {% for type, messages in app.flashes %}
+                <div class="flash-messages">
+                    {% for message in messages %}
+                        <div class="flash {{ type }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+
+            {% block body %}{% endblock %}
+        </div>
+
+        {% block javascripts %}
+        <script>
+            function markAsRead(articleId) {
+                fetch('/article/' + articleId + '/mark-read', { 
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(() => {
+                    document.querySelector('[data-article="' + articleId + '"]').classList.add('read');
+                    document.querySelector('[data-article="' + articleId + '"]').classList.remove('unread');
+                });
+            }
+        </script>
+        {% endblock %}
+    </body>
+</html>
