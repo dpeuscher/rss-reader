@@ -1,24 +1,14 @@
-require('dotenv').config();
-const { validateEnvironmentVariables } = require('./config/validateEnv');
-
-// Validate environment variables on startup
-if (process.env.NODE_ENV !== 'test') {
-  validateEnvironmentVariables();
-}
-
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 
-const authRoutes = require('./routes/auth');
-const feedRoutes = require('./routes/feeds');
-const articleRoutes = require('./routes/articles');
+const authRoutes = require('../src/routes/auth');
+const feedRoutes = require('../src/routes/feeds');
+const articleRoutes = require('../src/routes/articles');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -33,17 +23,6 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 app.use(express.static(path.join(__dirname, '../public')));
-
-const connectDB = async () => {
-  try {
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/rss-reader';
-    await mongoose.connect(mongoUri);
-    console.log('MongoDB connected successfully');
-  } catch (error) {
-    console.error('MongoDB connection error:', error);
-    process.exit(1);
-  }
-};
 
 app.use('/api/auth', authRoutes);
 app.use('/api/feeds', feedRoutes);
@@ -72,24 +51,5 @@ app.use((err, req, res, next) => {
     error: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
   });
 });
-
-const startServer = async () => {
-  try {
-    await connectDB();
-    
-    app.listen(PORT, () => {
-      console.log(`RSS Reader server running on port ${PORT}`);
-      console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`Visit: http://localhost:${PORT}`);
-    });
-  } catch (error) {
-    console.error('Failed to start server:', error);
-    process.exit(1);
-  }
-};
-
-if (require.main === module) {
-  startServer();
-}
 
 module.exports = app;
