@@ -28,6 +28,7 @@ jobs:
         mkdir -p $HOME/.claude
         echo '${{ secrets.CLAUDE_CREDENTIALS_BASE64 }}' | base64 -d > $HOME/.claude/.credentials.json
         chmod 600 $HOME/.claude/.credentials.json
+        echo "Claude credentials file created with hash: $(sha256sum $HOME/.claude/.credentials.json | cut -d' ' -f1)"
         
     - name: Run Claude Code Agent
       env:
