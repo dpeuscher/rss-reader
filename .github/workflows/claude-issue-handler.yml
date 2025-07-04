@@ -3,6 +3,7 @@ name: Claude Issue Handler
 on:
   issues:
     types: [opened]
+  workflow_dispatch:
 
 jobs:
   handle-issue:
@@ -25,7 +26,7 @@ jobs:
     - name: Create Claude credentials file
       run: |
         mkdir -p $HOME/.claude
-        echo '${{ secrets.CLAUDE_CREDENTIAL_FILE }}' > $HOME/.claude/.credentials.json
+        echo '${{ secrets.CLAUDE_CREDENTIALS_BASE64 }}' | base64 -d > $HOME/.claude/.credentials.json
         chmod 600 $HOME/.claude/.credentials.json
         
     - name: Run Claude Code Agent
