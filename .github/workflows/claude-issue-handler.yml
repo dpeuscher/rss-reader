@@ -23,24 +23,19 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GHCR_TOKEN }}
       
-    - name: Create Claude credentials file
-      run: |
-        mkdir -p $HOME/.claude
-        echo '${{ secrets.CLAUDE_CREDENTIALS_BASE64 }}' | base64 -d > $HOME/.claude/.credentials.json
-        chmod 600 $HOME/.claude/.credentials.json
-        echo "Claude credentials file created with hash: $(sha256sum $HOME/.claude/.credentials.json | cut -d' ' -f1)"
-        
     - name: Run Claude Code Agent
       env:
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
         REPO_URL: ${{ github.server_url }}/${{ github.repository }}
         PROMPT: "--detail"
         TASK_TYPE: "issue"
+        CLAUDE_CREDENTIALS_B64: ${{ secrets.CLAUDE_CREDENTIALS_BASE64 }}
       run: |
+        echo "Claude credentials hash: $(echo '${{ secrets.CLAUDE_CREDENTIALS_BASE64 }}' | sha256sum | cut -d' ' -f1)"
         docker run --rm \
           -e GH_TOKEN \
           -e REPO_URL="$REPO_URL" \
           -e PROMPT="$PROMPT" \
           -e TASK_TYPE="$TASK_TYPE" \
-          -v "$HOME/.claude/.credentials.json":/home/node/.claude/.credentials.json:rw \
+          -e CLAUDE_CREDENTIALS_B64 \
           ghcr.io/dpeuscher/claude-code-agent:latest
