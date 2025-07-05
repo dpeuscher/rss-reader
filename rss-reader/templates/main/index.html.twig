@@ -1,0 +1,62 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}RSS Reader - Home{% endblock %}
+
+{% block body %}
+<div class="row">
+    <div class="col-md-8">
+        <h1>Welcome to RSS Reader</h1>
+        <p class="lead">A modern RSS feed reader built with Symfony 6.4</p>
+        
+        <div class="row mt-4">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">📰 Read Articles</h5>
+                        <p class="card-text">Stay updated with your favorite RSS feeds</p>
+                        <a href="{{ path('app_dashboard') }}" class="btn btn-primary">Go to Dashboard</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">📡 Manage Feeds</h5>
+                        <p class="card-text">Add, organize, and manage your RSS subscriptions</p>
+                        <a href="{{ path('app_feeds_index') }}" class="btn btn-primary">Manage Feeds</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">🔍 Search</h5>
+                        <p class="card-text">Find articles across all your subscriptions</p>
+                        <a href="#" class="btn btn-primary">Search Articles</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5>Features</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li>✅ RSS/Atom feed support</li>
+                    <li>✅ User authentication</li>
+                    <li>✅ Article management</li>
+                    <li>✅ Feed categorization</li>
+                    <li>✅ Responsive design</li>
+                    <li>✅ Search functionality</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
