@@ -1,9 +1,11 @@
 name: Claude – Token Refresh
 
-on:
-  schedule:
-    - cron: '0 */4 * * *'  # Every 4 hours
-  workflow_dispatch:
+# DISABLED - Token refresh workflow deactivated
+# on:
+#   schedule:
+#     - cron: '0 */4 * * *'  # Every 4 hours
+#   workflow_dispatch:
+on: []
 
 jobs:
   refresh-token:
