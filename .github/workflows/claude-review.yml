@@ -1,15 +1,19 @@
 # TEMPLATE – Enable in consumer repo only
-name: Claude – Apply Feedback
+name: Claude – PR Review
 
 on:
-  pull_request_review_comment:
-    types: [created]
-  issue_comment:
-    types: [created]
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'Target PR number (for manual run)'
+        required: false
+        type: string
 
 jobs:
-  apply-feedback:
-    if: github.event.pull_request || (github.event.issue.pull_request && github.event.comment)
+  review-pr:
+    if: github.event.action != 'labeled' || contains(github.event.label.name, 'AI')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,15 +23,14 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_TOKEN }}
-      - name: Claude – apply PR feedback
+      - name: Claude – review PR
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           REPO_URL: ${{ github.server_url }}/${{ github.repository }}
-          MODE: apply_feedback
-          PROMPT: ${{ github.event.comment.body }}
-          PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
+          MODE: review
+          PROMPT: "Automated PR review"
+          PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
           CLAUDE_CREDENTIALS_B64: ${{ secrets.CLAUDE_CREDENTIALS_B64 }}
-          ONLY_AUTOMATE_OWN_ISSUES: 1
         run: |
           docker run --rm \
             -e GH_TOKEN \
@@ -36,5 +39,4 @@ jobs:
             -e PROMPT \
             -e PR_NUMBER \
             -e CLAUDE_CREDENTIALS_B64 \
-            -e ONLY_AUTOMATE_OWN_ISSUES \
             ghcr.io/dpeuscher/claude-code-agent:latest 
