@@ -1,0 +1,82 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Dashboard - RSS Reader{% endblock %}
+
+{% block body %}
+<div class="row">
+    <div class="col-md-12">
+        <h1>Welcome back, {{ user.email }}!</h1>
+        <p class="lead">Here's your RSS reading dashboard</p>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">📰</h5>
+                <h3>0</h3>
+                <p class="card-text">Unread Articles</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">📡</h5>
+                <h3>0</h3>
+                <p class="card-text">Active Feeds</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">⭐</h5>
+                <h3>0</h3>
+                <p class="card-text">Starred Articles</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">📁</h5>
+                <h3>0</h3>
+                <p class="card-text">Categories</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5>Recent Articles</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">No articles yet. <a href="{{ path('app_feeds_index') }}">Add some feeds</a> to get started!</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5>Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ path('app_feeds_index') }}" class="btn btn-primary">Manage Feeds</a>
+                    <button class="btn btn-outline-secondary">Mark All as Read</button>
+                    <button class="btn btn-outline-secondary">Refresh All Feeds</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

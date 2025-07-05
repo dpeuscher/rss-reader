@@ -1,0 +1,26 @@
+<div class="card">
+    <div class="card-header">
+        <h6>Feed Preview: {{ feed.title }}</h6>
+    </div>
+    <div class="card-body">
+        <p><strong>Description:</strong> {{ feed.description }}</p>
+        <p><strong>Site URL:</strong> <a href="{{ feed.link }}" target="_blank">{{ feed.link }}</a></p>
+        
+        <h6>Recent Articles ({{ articles|length }}):</h6>
+        {% if articles|length > 0 %}
+            <div class="list-group">
+                {% for article in articles %}
+                    <div class="list-group-item">
+                        <h6><a href="{{ article.url }}" target="_blank">{{ article.title }}</a></h6>
+                        <small class="text-muted">{{ article.publishedAt|date('M j, Y g:i A') }}</small>
+                        {% if article.summary %}
+                            <p class="mb-0 mt-1">{{ article.summary|slice(0, 100) }}...</p>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-muted">No articles found in this feed.</p>
+        {% endif %}
+    </div>
+</div>
