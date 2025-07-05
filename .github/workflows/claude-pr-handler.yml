@@ -32,6 +32,7 @@ jobs:
         PROMPT: "--write --apply-feedback"
         TASK_TYPE: "pr"
         CLAUDE_CREDENTIALS_B64: ${{ secrets.CLAUDE_CREDENTIALS_BASE64 }}
+        ONLY_AUTOMATE_OWN_ISSUES: 1
       run: |
         echo "Claude credentials hash: $(echo '${{ secrets.CLAUDE_CREDENTIALS_BASE64 }}' | sha256sum | cut -d' ' -f1)"
         docker run --rm \
@@ -40,4 +41,5 @@ jobs:
           -e PROMPT="$PROMPT" \
           -e TASK_TYPE="$TASK_TYPE" \
           -e CLAUDE_CREDENTIALS_B64 \
+          -e ONLY_AUTOMATE_OWN_ISSUES \
           ghcr.io/dpeuscher/claude-code-agent:latest
