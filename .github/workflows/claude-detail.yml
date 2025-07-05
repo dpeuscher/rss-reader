@@ -28,7 +28,7 @@ jobs:
           MODE: detail
           PROMPT: ${{ github.event.issue.body || github.event.inputs.issue_number && 'Manual detail trigger' }}
           ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
-          CLAUDE_CREDENTIALS_B64: ${{ secrets.CLAUDE_CREDENTIALS_BASE64 }}
+          CLAUDE_CREDENTIALS_B64: ${{ secrets.CLAUDE_CREDENTIALS_B64 }}
           ONLY_AUTOMATE_OWN_ISSUES: 1
         run: |
           docker run --rm \
