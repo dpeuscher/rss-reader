@@ -1,11 +1,11 @@
 name: Claude – Token Refresh
 
-# DISABLED - Token refresh workflow deactivated
+# SCHEDULE DISABLED - Only manual trigger available
 # on:
 #   schedule:
 #     - cron: '0 */4 * * *'  # Every 4 hours
-#   workflow_dispatch:
-on: []
+on:
+  workflow_dispatch:
 
 jobs:
   refresh-token:
