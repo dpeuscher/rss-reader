@@ -29,15 +29,19 @@ jobs:
       env:
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
         REPO_URL: ${{ github.server_url }}/${{ github.repository }}
-        PROMPT: "--write --apply-feedback"
-        TASK_TYPE: "pr"
+        MODE: apply_feedback
+        PROMPT: ${{ github.event.comment.body }}
+        PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
         CLAUDE_CREDENTIALS_B64: ${{ secrets.CLAUDE_CREDENTIALS_BASE64 }}
+        ONLY_AUTOMATE_OWN_ISSUES: 1
       run: |
         echo "Claude credentials hash: $(echo '${{ secrets.CLAUDE_CREDENTIALS_BASE64 }}' | sha256sum | cut -d' ' -f1)"
         docker run --rm \
           -e GH_TOKEN \
           -e REPO_URL="$REPO_URL" \
+          -e MODE="$MODE" \
           -e PROMPT="$PROMPT" \
-          -e TASK_TYPE="$TASK_TYPE" \
+          -e PR_NUMBER="$PR_NUMBER" \
           -e CLAUDE_CREDENTIALS_B64 \
+          -e ONLY_AUTOMATE_OWN_ISSUES \
           ghcr.io/dpeuscher/claude-code-agent:latest

@@ -28,17 +28,21 @@ jobs:
       env:
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
         REPO_URL: ${{ github.server_url }}/${{ github.repository }}
-        PROMPT: "--detail"
-        TASK_TYPE: "issue"
+        MODE: detail
+        PROMPT: ${{ github.event.issue.body }}
+        ISSUE_NUMBER: ${{ github.event.issue.number }}
         CLAUDE_CREDENTIALS_B64: ${{ secrets.CLAUDE_CREDENTIALS_BASE64 }}
+        ONLY_AUTOMATE_OWN_ISSUES: 1
       run: |
         echo "Claude credentials hash: $(echo '${{ secrets.CLAUDE_CREDENTIALS_BASE64 }}' | sha256sum | cut -d' ' -f1)"
         docker run --rm \
           -e GH_TOKEN \
           -e REPO_URL="$REPO_URL" \
+          -e MODE="$MODE" \
           -e PROMPT="$PROMPT" \
-          -e TASK_TYPE="$TASK_TYPE" \
+          -e ISSUE_NUMBER="$ISSUE_NUMBER" \
           -e CLAUDE_CREDENTIALS_B64 \
+          -e ONLY_AUTOMATE_OWN_ISSUES \
           ghcr.io/dpeuscher/claude-code-agent:latest
 
   handle-labeled-issue:
@@ -63,17 +67,21 @@ jobs:
       env:
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
         REPO_URL: ${{ github.server_url }}/${{ github.repository }}
-        PROMPT: "--write"
-        TASK_TYPE: "issue"
+        MODE: write
+        PROMPT: ${{ github.event.issue.body }}
+        ISSUE_NUMBER: ${{ github.event.issue.number }}
         CLAUDE_CREDENTIALS_B64: ${{ secrets.CLAUDE_CREDENTIALS_BASE64 }}
+        ONLY_AUTOMATE_OWN_ISSUES: 1
       run: |
         echo "Claude credentials hash: $(echo '${{ secrets.CLAUDE_CREDENTIALS_BASE64 }}' | sha256sum | cut -d' ' -f1)"
         docker run --rm \
           -e GH_TOKEN \
           -e REPO_URL="$REPO_URL" \
+          -e MODE="$MODE" \
           -e PROMPT="$PROMPT" \
-          -e TASK_TYPE="$TASK_TYPE" \
+          -e ISSUE_NUMBER="$ISSUE_NUMBER" \
           -e CLAUDE_CREDENTIALS_B64 \
+          -e ONLY_AUTOMATE_OWN_ISSUES \
           ghcr.io/dpeuscher/claude-code-agent:latest
 
   handle-manual-trigger:
@@ -97,15 +105,19 @@ jobs:
       env:
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
         REPO_URL: ${{ github.server_url }}/${{ github.repository }}
-        PROMPT: "--detail"
-        TASK_TYPE: "issue"
+        MODE: detail
+        PROMPT: "Manual detail trigger"
+        ISSUE_NUMBER: ${{ inputs.issue_number }}
         CLAUDE_CREDENTIALS_B64: ${{ secrets.CLAUDE_CREDENTIALS_BASE64 }}
+        ONLY_AUTOMATE_OWN_ISSUES: 1
       run: |
         echo "Claude credentials hash: $(echo '${{ secrets.CLAUDE_CREDENTIALS_BASE64 }}' | sha256sum | cut -d' ' -f1)"
         docker run --rm \
           -e GH_TOKEN \
           -e REPO_URL="$REPO_URL" \
+          -e MODE="$MODE" \
           -e PROMPT="$PROMPT" \
-          -e TASK_TYPE="$TASK_TYPE" \
+          -e ISSUE_NUMBER="$ISSUE_NUMBER" \
           -e CLAUDE_CREDENTIALS_B64 \
+          -e ONLY_AUTOMATE_OWN_ISSUES \
           ghcr.io/dpeuscher/claude-code-agent:latest

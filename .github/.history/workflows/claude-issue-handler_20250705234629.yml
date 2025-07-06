@@ -1,0 +1,123 @@
+name: Claude Issue Handler
+
+on:
+  issues:
+    types: [opened, labeled]
+  workflow_dispatch:
+
+jobs:
+  handle-new-issue:
+    if: github.event.action == 'opened'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GHCR_TOKEN }}
+      
+    - name: Run Claude Code Agent
+      env:
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+        MODE: detail
+        PROMPT: ${{ github.event.issue.body }}
+        ISSUE_NUMBER: ${{ github.event.issue.number }}
+        CLAUDE_CREDENTIALS_B64: ${{ secrets.CLAUDE_CREDENTIALS_BASE64 }}
+        ONLY_AUTOMATE_OWN_ISSUES: 1
+      run: |
+        echo "Claude credentials hash: $(echo '${{ secrets.CLAUDE_CREDENTIALS_BASE64 }}' | sha256sum | cut -d' ' -f1)"
+        docker run --rm \
+          -e GH_TOKEN \
+          -e REPO_URL="$REPO_URL" \
+          -e MODE="$MODE" \
+          -e PROMPT="$PROMPT" \
+          -e ISSUE_NUMBER="$ISSUE_NUMBER" \
+          -e CLAUDE_CREDENTIALS_B64 \
+          -e ONLY_AUTOMATE_OWN_ISSUES \
+          ghcr.io/dpeuscher/claude-code-agent:latest
+
+  handle-labeled-issue:
+    if: github.event.action == 'labeled'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GHCR_TOKEN }}
+      
+    - name: Run Claude Code Agent
+      env:
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+        MODE: write
+        PROMPT: ${{ github.event.issue.body }}
+        ISSUE_NUMBER: ${{ github.event.issue.number }}
+        CLAUDE_CREDENTIALS_B64: ${{ secrets.CLAUDE_CREDENTIALS_BASE64 }}
+        ONLY_AUTOMATE_OWN_ISSUES: 1
+      run: |
+        echo "Claude credentials hash: $(echo '${{ secrets.CLAUDE_CREDENTIALS_BASE64 }}' | sha256sum | cut -d' ' -f1)"
+        docker run --rm \
+          -e GH_TOKEN \
+          -e REPO_URL="$REPO_URL" \
+          -e MODE="$MODE" \
+          -e PROMPT="$PROMPT" \
+          -e ISSUE_NUMBER="$ISSUE_NUMBER" \
+          -e CLAUDE_CREDENTIALS_B64 \
+          -e ONLY_AUTOMATE_OWN_ISSUES \
+          ghcr.io/dpeuscher/claude-code-agent:latest
+
+  handle-manual-trigger:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GHCR_TOKEN }}
+      
+    - name: Run Claude Code Agent
+      env:
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+        MODE: detail
+        PROMPT: "Manual detail trigger"
+        ISSUE_NUMBER: ${{ inputs.issue_number }}
+        CLAUDE_CREDENTIALS_B64: ${{ secrets.CLAUDE_CREDENTIALS_BASE64 }}
+        ONLY_AUTOMATE_OWN_ISSUES: 1
+      run: |
+        echo "Claude credentials hash: $(echo '${{ secrets.CLAUDE_CREDENTIALS_BASE64 }}' | sha256sum | cut -d' ' -f1)"
+        docker run --rm \
+          -e GH_TOKEN \
+          -e REPO_URL="$REPO_URL" \
+          -e MODE="$MODE" \
+          -e PROMPT="$PROMPT" \
+          -e ISSUE_NUMBER="$ISSUE_NUMBER" \
+          -e CLAUDE_CREDENTIALS_B64 \
+          -e ONLY_AUTOMATE_OWN_ISSUES \
+          ghcr.io/dpeuscher/claude-code-agent:latest
