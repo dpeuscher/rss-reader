@@ -11,6 +11,10 @@ on:
         required: false
         type: string
 
+concurrency:
+  group: claude-review-${{ github.event.pull_request.number || github.event.inputs.pr_number }}
+  cancel-in-progress: true
+
 jobs:
   review-pr:
     if: github.event.action != 'labeled' || contains(github.event.label.name, 'AI')
