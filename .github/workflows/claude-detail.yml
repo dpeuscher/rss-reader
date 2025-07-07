@@ -2,7 +2,7 @@ name: Claude – Detail Story
 
 on:
   issues:
-    types: [opened]
+    types: [opened, labeled, unlabeled]
   workflow_dispatch:
     inputs:
       issue_number:
@@ -12,6 +12,12 @@ on:
 
 jobs:
   generate-detail:
+    # Run on new issues OR when AI label is present but Story Ready is not
+    if: |
+      github.event.action == 'opened' ||
+      (github.event.action == 'labeled' || github.event.action == 'unlabeled') &&
+      contains(github.event.issue.labels.*.name, 'AI') &&
+      !contains(github.event.issue.labels.*.name, 'Story Ready')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
