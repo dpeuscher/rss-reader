@@ -7,11 +7,14 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
+use Symfony\Component\Security\Csrf\CsrfToken;
 
 class MainController extends AbstractController
 {
     public function __construct(
-        private readonly LicensePlateValidatorService $licensePlateValidator
+        private readonly LicensePlateValidatorService $licensePlateValidator,
+        private readonly CsrfTokenManagerInterface $csrfTokenManager
     ) {
     }
     #[Route('/', name: 'app_main')]
@@ -51,12 +54,18 @@ class MainController extends AbstractController
         $errorMessage = '';
 
         if ($licensePlate !== null) {
-            // Sanitize input to prevent XSS
-            $licensePlate = htmlspecialchars(strip_tags(trim($licensePlate)), ENT_QUOTES, 'UTF-8');
-            
-            $result = $validatorService->validate($licensePlate);
-            $isValid = $result['valid'];
-            $errorMessage = $result['error'];
+            // Validate CSRF token
+            $token = $request->request->get('_token');
+            if (!$this->csrfTokenManager->isTokenValid(new CsrfToken('license_plate_validator', $token))) {
+                $errorMessage = 'Ungültiges Formular. Bitte versuchen Sie es erneut.';
+            } else {
+                // Sanitize input to prevent XSS
+                $licensePlate = htmlspecialchars(strip_tags(trim($licensePlate)), ENT_QUOTES, 'UTF-8');
+                
+                $result = $validatorService->validate($licensePlate);
+                $isValid = $result['valid'];
+                $errorMessage = $result['error'];
+            }
         }
 
         return $this->render('main/license_plate_validator.html.twig', [
