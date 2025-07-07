@@ -26,6 +26,7 @@ jobs:
           MODE: apply_feedback
           PROMPT: ${{ github.event.comment.body }}
           PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
+          COMMENT_URL: ${{ github.event.comment.html_url }}
           CLAUDE_CREDENTIALS_B64: ${{ secrets.CLAUDE_CREDENTIALS_B64 }}
           ONLY_AUTOMATE_OWN_ISSUES: 1
         run: |
@@ -35,6 +36,7 @@ jobs:
             -e MODE \
             -e PROMPT \
             -e PR_NUMBER \
+            -e COMMENT_URL \
             -e CLAUDE_CREDENTIALS_B64 \
             -e ONLY_AUTOMATE_OWN_ISSUES \
-            ghcr.io/dpeuscher/claude-code-agent:latest 
+            ghcr.io/dpeuscher/claude-code-agent:latest
