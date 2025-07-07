@@ -45,8 +45,8 @@ COPY <<EOF /etc/apache2/sites-available/000-default.conf
         FallbackResource /index.php
     </Directory>
     
-    # Uncomment the following line to enable the rewrite engine
-    # RewriteEngine On
+    # Enable the rewrite engine for proper routing
+    RewriteEngine On
     
     ErrorLog /var/log/apache2/project_error.log
     CustomLog /var/log/apache2/project_access.log combined
