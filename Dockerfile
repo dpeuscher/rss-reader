@@ -32,26 +32,7 @@ RUN composer install --no-dev --optimize-autoloader
 
 # Configure Apache
 RUN a2enmod rewrite
-COPY <<EOF /etc/apache2/sites-available/000-default.conf
-<VirtualHost *:80>
-    ServerName localhost
-    DocumentRoot /var/www/public
-    
-    <Directory /var/www/public>
-        AllowOverride None
-        Order Allow,Deny
-        Allow from All
-        
-        FallbackResource /index.php
-    </Directory>
-    
-    # Uncomment the following line to enable the rewrite engine
-    # RewriteEngine On
-    
-    ErrorLog /var/log/apache2/project_error.log
-    CustomLog /var/log/apache2/project_access.log combined
-</VirtualHost>
-EOF
+COPY apache-config.conf /etc/apache2/sites-available/000-default.conf
 
 # Change ownership of our applications
 RUN chown -R www-data:www-data /var/www
