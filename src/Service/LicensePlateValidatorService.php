@@ -15,115 +15,58 @@ class LicensePlateValidatorService
     public function __construct()
     {
         // Updated comprehensive list of German license plate district codes (2024/2025)
-        // Based on official KBA (Kraftfahrt-Bundesamt) data and current registrations
+        // Based on official KBA (Kraftfahrt-Bundesamt) data from av1_2025_04_csv.csv
         $this->validDistrictCodes = [
-            // A
-            'A', 'AA', 'AB', 'ABG', 'AC', 'AD', 'AE', 'AF', 'AG', 'AH', 'AI', 'AIC', 'AK', 'ALF', 'ALZ',
-            'AM', 'AN', 'ANA', 'ANG', 'ANK', 'AO', 'AP', 'APD', 'ARN', 'ART', 'AS', 'ASL', 'ASZ', 'AUR',
-            'AW', 'AZ',
-            
-            // B
-            'B', 'BA', 'BAD', 'BAR', 'BB', 'BC', 'BD', 'BE', 'BF', 'BG', 'BGL', 'BH', 'BI', 'BIR', 'BIT',
-            'BK', 'BL', 'BLB', 'BLK', 'BM', 'BN', 'BO', 'BOR', 'BOT', 'BP', 'BRA', 'BRB', 'BRG', 'BRK',
-            'BRV', 'BS', 'BT', 'BU', 'BUL', 'BUR', 'BW', 'BZ',
-            
-            // C
-            'C', 'CA', 'CB', 'CD', 'CE', 'CG', 'CH', 'CLP', 'CM', 'CO', 'COC', 'COE', 'CR', 'CW', 'CUX',
-            
-            // D
-            'D', 'DA', 'DAH', 'DAN', 'DAU', 'DB', 'DD', 'DE', 'DEG', 'DEL', 'DH', 'DI', 'DIL', 'DIN',
-            'DL', 'DM', 'DN', 'DO', 'DON', 'DU', 'DW',
-            
-            // E
-            'E', 'EA', 'EB', 'ED', 'EE', 'EF', 'EG', 'EH', 'EI', 'EIC', 'EIN', 'EL', 'EM', 'EN', 'ER',
-            'ERB', 'ERH', 'ERK', 'ERZ', 'ES', 'ESW', 'EU', 'EW',
-            
-            // F
-            'F', 'FB', 'FD', 'FDB', 'FDS', 'FEU', 'FF', 'FFB', 'FG', 'FH', 'FI', 'FIT', 'FL', 'FN',
-            'FO', 'FOR', 'FR', 'FRG', 'FRI', 'FRW', 'FS', 'FT', 'FU', 'FUE', 'FW',
-            
-            // G
-            'G', 'GA', 'GAN', 'GAP', 'GC', 'GD', 'GDB', 'GE', 'GEL', 'GEO', 'GER', 'GF', 'GG', 'GH',
-            'GI', 'GK', 'GL', 'GM', 'GMN', 'GN', 'GNT', 'GO', 'GOA', 'GOH', 'GP', 'GR', 'GRH', 'GRI',
-            'GRM', 'GRZ', 'GS', 'GT', 'GU', 'GUB', 'GUN', 'GV', 'GW', 'GZ',
-            
-            // H
-            'H', 'HA', 'HAL', 'HAM', 'HAS', 'HB', 'HBN', 'HBS', 'HC', 'HD', 'HE', 'HEF', 'HEI', 'HEL',
-            'HEN', 'HER', 'HET', 'HF', 'HG', 'HGN', 'HGW', 'HH', 'HI', 'HIG', 'HIP', 'HK', 'HL', 'HM',
-            'HMÜ', 'HN', 'HO', 'HOG', 'HOH', 'HOM', 'HOR', 'HOT', 'HP', 'HR', 'HRO', 'HS', 'HSK', 'HST',
-            'HU', 'HV', 'HVL', 'HW', 'HWI', 'HX', 'HY', 'HZ',
-            
-            // I
-            'IK', 'IL', 'ILL', 'IN', 'IZ',
-            
-            // J
-            'J', 'JE', 'JL', 'JÜL',
-            
-            // K
-            'K', 'KA', 'KB', 'KC', 'KE', 'KEH', 'KF', 'KG', 'KH', 'KI', 'KIB', 'KK', 'KL', 'KLE', 'KLZ',
-            'KM', 'KN', 'KO', 'KÖT', 'KR', 'KRU', 'KS', 'KT', 'KU', 'KÜN', 'KUS', 'KW', 'KY', 'KYF', 'KZ',
-            
-            // L
-            'L', 'LA', 'LAU', 'LB', 'LC', 'LD', 'LDK', 'LE', 'LEV', 'LF', 'LG', 'LH', 'LI', 'LIB', 'LIF',
-            'LIN', 'LIP', 'LL', 'LM', 'LN', 'LO', 'LÖR', 'LP', 'LR', 'LS', 'LSA', 'LSN', 'LSZ', 'LU',
-            'LUN', 'LUP', 'LW', 'LWL', 'LZ',
-            
-            // M
-            'M', 'MA', 'MAB', 'MAI', 'MAL', 'MAR', 'MB', 'MC', 'MD', 'ME', 'MEG', 'MEI', 'MEK', 'MET',
-            'MG', 'MH', 'MI', 'MIL', 'MK', 'ML', 'MM', 'MN', 'MO', 'MOD', 'MOL', 'MOS', 'MQ', 'MR',
-            'MS', 'MSH', 'MSP', 'MST', 'MU', 'MV', 'MW', 'MY', 'MZ', 'MZG',
-            
-            // N
-            'N', 'NB', 'ND', 'NDH', 'NE', 'NEA', 'NES', 'NEW', 'NF', 'NH', 'NI', 'NK', 'NL', 'NM',
-            'NMS', 'NOH', 'NOM', 'NOR', 'NP', 'NR', 'NU', 'NV', 'NW', 'NY', 'NZ',
-            
-            // O
-            'OA', 'OAL', 'OB', 'OBB', 'OBG', 'OC', 'OD', 'OE', 'OF', 'OG', 'OH', 'OHA', 'OHV', 'OHZ',
-            'OK', 'OL', 'OM', 'ON', 'OP', 'OR', 'OS', 'OSL', 'OZ',
-            
-            // P
-            'P', 'PA', 'PAF', 'PAN', 'PAR', 'PB', 'PC', 'PE', 'PEI', 'PF', 'PI', 'PIR', 'PK', 'PL',
-            'PLÖ', 'PLO', 'PM', 'PN', 'PO', 'PR', 'PS', 'PU', 'PW', 'PZ',
-            
-            // Q
-            'QLB', 'QR',
-            
-            // R
-            'R', 'RA', 'RB', 'RC', 'RD', 'RE', 'REG', 'REH', 'REI', 'RG', 'RH', 'RI', 'RID', 'RN', 'RO',
-            'ROD', 'ROF', 'ROL', 'ROS', 'ROT', 'RP', 'RS', 'RSL', 'RT', 'RU', 'RV', 'RW', 'RZ',
-            
-            // S
-            'S', 'SAB', 'SAD', 'SAL', 'SAN', 'SAW', 'SB', 'SC', 'SCZ', 'SE', 'SEB', 'SEE', 'SEF', 'SEL',
-            'SF', 'SG', 'SH', 'SI', 'SIG', 'SIM', 'SK', 'SL', 'SLE', 'SLF', 'SLK', 'SLN', 'SLS', 'SM',
-            'SN', 'SO', 'SOB', 'SOG', 'SOK', 'SOM', 'SON', 'SP', 'SPB', 'SPN', 'SR', 'SRB', 'SRO', 'ST',
-            'STA', 'STB', 'STD', 'STE', 'STL', 'STO', 'STP', 'STR', 'STS', 'STU', 'STV', 'STW', 'SU',
-            'SUD', 'SV', 'SW', 'SY', 'SZ', 'SZB',
-            
-            // T
-            'T', 'TA', 'TAB', 'TB', 'TC', 'TD', 'TE', 'TET', 'TF', 'TG', 'TH', 'THW', 'TIR', 'TK',
-            'TL', 'TM', 'TN', 'TO', 'TOL', 'TOP', 'TP', 'TR', 'TS', 'TT', 'TU', 'TUB', 'TÜB', 'TUT',
-            'TV', 'TW', 'TZ',
-            
-            // U
-            'UE', 'UEM', 'UH', 'UL', 'UM', 'UN', 'UP', 'UR', 'US', 'UZ',
-            
-            // V
-            'V', 'VB', 'VEC', 'VER', 'VG', 'VIB', 'VK', 'VL', 'VOH', 'VR', 'VS', 'VW',
-            
-            // W
-            'W', 'WA', 'WAF', 'WAI', 'WAK', 'WAN', 'WAR', 'WAS', 'WAT', 'WB', 'WC', 'WD', 'WE', 'WEB',
-            'WED', 'WEI', 'WEL', 'WEN', 'WER', 'WES', 'WF', 'WG', 'WH', 'WHV', 'WI', 'WIL', 'WIS', 'WIT',
-            'WIZ', 'WK', 'WL', 'WM', 'WMS', 'WN', 'WO', 'WOB', 'WOH', 'WOL', 'WOR', 'WOS', 'WP', 'WR',
-            'WS', 'WSF', 'WST', 'WSW', 'WT', 'WTM', 'WU', 'WUG', 'WV', 'WW', 'WX', 'WY', 'WZ',
-            
-            // X
-            'X', 'XK',
-            
-            // Y
-            'Y', 'YG',
-            
-            // Z
-            'Z', 'ZE', 'ZEL', 'ZI', 'ZIG', 'ZP', 'ZR', 'ZS', 'ZU', 'ZV', 'ZW', 'ZZ'
+            // Complete list of all valid German district codes from KBA official data
+            'A', 'AA', 'AB', 'ABG', 'ABI', 'AC', 'AE', 'AH', 'AIB', 'AIC', 'AK', 'ALF', 'ALZ', 'AM', 'AN',
+            'ANA', 'ANG', 'ANK', 'AP', 'APD', 'ARN', 'ART', 'AS', 'ASL', 'ASZ', 'AT', 'AU', 'AUR', 'AW',
+            'AZ', 'AZE', 'B', 'BA', 'BAD', 'BAR', 'BB', 'BBG', 'BBL', 'BC', 'BCH', 'BD', 'BE', 'BED',
+            'BER', 'BF', 'BGD', 'BGL', 'BH', 'BI', 'BID', 'BIN', 'BIR', 'BIT', 'BIW', 'BK', 'BKS', 'BL',
+            'BLB', 'BLK', 'BM', 'BN', 'BNA', 'BO', 'BOG', 'BOH', 'BOR', 'BOT', 'BP', 'BRA', 'BRB', 'BRG',
+            'BRK', 'BRL', 'BRV', 'BS', 'BSB', 'BSK', 'BT', 'BTF', 'BUL', 'BW', 'BWL', 'BYL', 'BZ',
+            'C', 'CA', 'CAS', 'CB', 'CE', 'CHA', 'CLP', 'CLZ', 'CO', 'COC', 'COE', 'CR', 'CUX', 'CW',
+            'D', 'DA', 'DAH', 'DAN', 'DAU', 'DBR', 'DD', 'DE', 'DEG', 'DEL', 'DGF', 'DH', 'DI', 'DIL',
+            'DIN', 'DIZ', 'DKB', 'DL', 'DLG', 'DM', 'DN', 'DO', 'DON', 'DS', 'DU', 'DUD', 'DW', 'DZ',
+            'E', 'EA', 'EB', 'EBE', 'EBN', 'EBS', 'ECK', 'ED', 'EE', 'EF', 'EG', 'EH', 'EI', 'EIC',
+            'EIL', 'EIN', 'EIS', 'EL', 'EM', 'EMD', 'EMS', 'EN', 'ER', 'ERB', 'ERH', 'ERK', 'ERZ', 'ES',
+            'ESB', 'ESW', 'EU', 'EW', 'F', 'FB', 'FD', 'FDB', 'FDS', 'FEU', 'FF', 'FFB', 'FG', 'FI',
+            'FKB', 'FL', 'FN', 'FO', 'FOR', 'FR', 'FRG', 'FRI', 'FRW', 'FS', 'FT', 'FTL', 'FW', 'FZ',
+            'G', 'GA', 'GAN', 'GAP', 'GC', 'GD', 'GDB', 'GE', 'GEL', 'GEO', 'GER', 'GF', 'GG', 'GHA',
+            'GHC', 'GI', 'GK', 'GL', 'GLA', 'GM', 'GMN', 'GN', 'GNT', 'GOA', 'GOH', 'GP', 'GR', 'GRA',
+            'GRH', 'GRI', 'GRM', 'GRZ', 'GS', 'GT', 'GTH', 'GUB', 'GUN', 'GV', 'GVM', 'GW', 'GZ',
+            'H', 'HA', 'HAB', 'HAL', 'HAM', 'HAS', 'HB', 'HBN', 'HBS', 'HC', 'HCH', 'HD', 'HDH', 'HDL',
+            'HE', 'HEB', 'HEF', 'HEI', 'HEL', 'HER', 'HET', 'HF', 'HG', 'HGN', 'HGW', 'HH', 'HHM', 'HI',
+            'HIG', 'HIP', 'HK', 'HL', 'HM', 'HN', 'HO', 'HOG', 'HOH', 'HOL', 'HOM', 'HOR', 'HOT', 'HP',
+            'HR', 'HRO', 'HS', 'HSK', 'HST', 'HU', 'HV', 'HVL', 'HWI', 'HX', 'HY', 'HZ',
+            'IGB', 'IK', 'IL', 'ILL', 'IN', 'IZ', 'J', 'JE', 'JL', 'K', 'KA', 'KB', 'KC', 'KE', 'KEH',
+            'KEL', 'KEM', 'KF', 'KG', 'KH', 'KI', 'KIB', 'KK', 'KL', 'KLE', 'KLZ', 'KM', 'KN', 'KO',
+            'KR', 'KRU', 'KS', 'KT', 'KU', 'KUS', 'KW', 'KY', 'KYF', 'L', 'LA', 'LAN', 'LAU', 'LB',
+            'LBS', 'LBZ', 'LC', 'LD', 'LDK', 'LDS', 'LEO', 'LER', 'LEV', 'LF', 'LG', 'LH', 'LI', 'LIB',
+            'LIF', 'LIP', 'LL', 'LM', 'LN', 'LOS', 'LP', 'LR', 'LRO', 'LSA', 'LSN', 'LSZ', 'LU', 'LUP',
+            'LWL', 'M', 'MA', 'MAB', 'MAI', 'MAK', 'MAL', 'MB', 'MC', 'MD', 'ME', 'MED', 'MEG', 'MEI',
+            'MEK', 'MEL', 'MER', 'MET', 'MG', 'MGH', 'MGN', 'MH', 'MHL', 'MI', 'MIL', 'MK', 'MKK', 'ML',
+            'MM', 'MN', 'MO', 'MOD', 'MOL', 'MON', 'MOS', 'MQ', 'MR', 'MS', 'MSE', 'MSH', 'MSP', 'MST',
+            'MTK', 'MTL', 'MUC', 'MVL', 'MW', 'MY', 'MYK', 'MZ', 'MZG', 'N', 'NAB', 'NAI', 'NAU', 'NB',
+            'ND', 'NDH', 'NE', 'NEA', 'NEB', 'NEC', 'NEN', 'NES', 'NEU', 'NEW', 'NF', 'NH', 'NI', 'NK',
+            'NL', 'NM', 'NMB', 'NMS', 'NOH', 'NOL', 'NOM', 'NOR', 'NP', 'NR', 'NRW', 'NT', 'NU', 'NVP',
+            'NW', 'NWM', 'NY', 'NZ', 'OA', 'OAL', 'OB', 'OBB', 'OBG', 'OC', 'OCH', 'OD', 'OE', 'OF',
+            'OG', 'OH', 'OHA', 'OHV', 'OHZ', 'OK', 'OL', 'OP', 'OPR', 'OS', 'OSL', 'OTW', 'OVI', 'OVL',
+            'OVP', 'OZ', 'P', 'PA', 'PAF', 'PAN', 'PAR', 'PB', 'PCH', 'PE', 'PEG', 'PF', 'PI', 'PIR',
+            'PL', 'PM', 'PN', 'PR', 'PS', 'PW', 'PZ', 'QFT', 'QLB', 'R', 'RA', 'RC', 'RD', 'RDG', 'RE',
+            'REG', 'REH', 'REI', 'RG', 'RH', 'RI', 'RID', 'RIE', 'RL', 'RM', 'RN', 'RO', 'ROD', 'ROF',
+            'ROK', 'ROL', 'ROS', 'ROT', 'ROW', 'RP', 'RPL', 'RS', 'RSL', 'RT', 'RU', 'RV', 'RW', 'RZ',
+            'S', 'SAB', 'SAD', 'SAL', 'SAN', 'SAW', 'SB', 'SBG', 'SBK', 'SC', 'SCZ', 'SDH', 'SDL', 'SDT',
+            'SE', 'SEB', 'SEE', 'SEF', 'SEL', 'SFB', 'SFT', 'SG', 'SGH', 'SH', 'SHA', 'SHG', 'SHK', 'SHL',
+            'SI', 'SIG', 'SIM', 'SK', 'SL', 'SLE', 'SLF', 'SLG', 'SLK', 'SLN', 'SLS', 'SLZ', 'SM', 'SN',
+            'SO', 'SOB', 'SOG', 'SOK', 'SON', 'SP', 'SPB', 'SPN', 'SR', 'SRB', 'SRO', 'ST', 'STA', 'STB',
+            'STD', 'STE', 'STL', 'STO', 'SU', 'SUL', 'SW', 'SWA', 'SY', 'SZ', 'SZB', 'TBB', 'TDO', 'TE',
+            'TET', 'TF', 'TG', 'THL', 'THW', 'TIR', 'TO', 'TP', 'TR', 'TS', 'TT', 'TUT', 'UE', 'UEM',
+            'UER', 'UFF', 'UH', 'UL', 'UM', 'UN', 'USI', 'V', 'VAI', 'VB', 'VEC', 'VER', 'VG', 'VIB',
+            'VIE', 'VIT', 'VK', 'VOH', 'VR', 'VS', 'W', 'WA', 'WAF', 'WAK', 'WAN', 'WAR', 'WAT', 'WB',
+            'WBG', 'WBS', 'WDA', 'WE', 'WEL', 'WEN', 'WER', 'WES', 'WF', 'WG', 'WHV', 'WI', 'WIL', 'WIS',
+            'WIT', 'WIZ', 'WK', 'WL', 'WLG', 'WM', 'WMS', 'WN', 'WND', 'WO', 'WOB', 'WOH', 'WOL', 'WOR',
+            'WOS', 'WR', 'WRN', 'WS', 'WSF', 'WST', 'WSW', 'WT', 'WTL', 'WTM', 'WUG', 'WUN', 'WUR', 'WW',
+            'WZ', 'WZL', 'Z', 'ZE', 'ZEL', 'ZI', 'ZIG', 'ZP', 'ZR', 'ZW', 'ZZ'
         ];
         
         // Convert to associative array for O(1) lookup performance
