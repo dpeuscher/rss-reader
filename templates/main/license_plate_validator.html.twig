@@ -21,7 +21,7 @@
                                class="form-control {% if license_plate is not null %}{{ is_valid ? 'is-valid' : 'is-invalid' }}{% endif %}" 
                                id="license_plate" 
                                name="license_plate" 
-                               value="{{ license_plate|default('') }}"
+                               value="{{ license_plate|default('')|e }}"
                                placeholder="z.B. M-AB 123 oder HH-XY 1234"
                                maxlength="12">
                         {% if license_plate is not null %}
@@ -31,7 +31,7 @@
                                 </div>
                             {% else %}
                                 <div class="invalid-feedback">
-                                    {{ error_message }}
+                                    {{ error_message|e }}
                                 </div>
                             {% endif %}
                         {% endif %}
@@ -46,10 +46,10 @@
                     <div class="mt-4">
                         <h5>Ergebnis:</h5>
                         <div class="alert {{ is_valid ? 'alert-success' : 'alert-danger' }}">
-                            <strong>Kennzeichen:</strong> {{ license_plate }}<br>
+                            <strong>Kennzeichen:</strong> {{ license_plate|e }}<br>
                             <strong>Status:</strong> {{ is_valid ? 'Gültig' : 'Ungültig' }}
                             {% if not is_valid %}
-                                <br><strong>Fehler:</strong> {{ error_message }}
+                                <br><strong>Fehler:</strong> {{ error_message|e }}
                             {% endif %}
                         </div>
                     </div>
