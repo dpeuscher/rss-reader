@@ -10,6 +10,10 @@ use Symfony\Component\Routing\Attribute\Route;
 
 class MainController extends AbstractController
 {
+    public function __construct(
+        private readonly LicensePlateValidatorService $licensePlateValidator
+    ) {
+    }
     #[Route('/', name: 'app_main')]
     public function index(): Response
     {
@@ -48,7 +52,7 @@ class MainController extends AbstractController
 
         if ($licensePlate !== null) {
             // Sanitize input to prevent XSS
-            $licensePlate = htmlspecialchars($licensePlate, ENT_QUOTES, 'UTF-8');
+            $licensePlate = htmlspecialchars(strip_tags(trim($licensePlate)), ENT_QUOTES, 'UTF-8');
             
             $result = $validatorService->validate($licensePlate);
             $isValid = $result['valid'];
