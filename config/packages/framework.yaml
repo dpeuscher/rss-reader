@@ -12,6 +12,9 @@ framework:
         cookie_secure: auto
         cookie_samesite: lax
 
+    # Enable CSRF protection
+    csrf_protection: true
+
     #esi: true
     #fragments: true
     php_errors:
