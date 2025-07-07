@@ -1,0 +1,72 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Deutsche Nummernschilder Validator{% endblock %}
+
+{% block body %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0">🚗 Deutsche Nummernschilder Validator</h2>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">
+                    Validieren Sie deutsche Nummernschilder. Geben Sie das Kennzeichen im Format <strong>ABC-XY 1234</strong> ein.
+                </p>
+                
+                <form method="post" action="{{ path('app_license_plate_validator') }}">
+                    <div class="mb-3">
+                        <label for="license_plate" class="form-label">Kennzeichen:</label>
+                        <input type="text" 
+                               class="form-control {% if license_plate is not null %}{{ is_valid ? 'is-valid' : 'is-invalid' }}{% endif %}" 
+                               id="license_plate" 
+                               name="license_plate" 
+                               value="{{ license_plate|default('') }}"
+                               placeholder="z.B. M-AB 123 oder HH-XY 1234"
+                               maxlength="12">
+                        {% if license_plate is not null %}
+                            {% if is_valid %}
+                                <div class="valid-feedback">
+                                    ✓ Gültiges deutsches Kennzeichen
+                                </div>
+                            {% else %}
+                                <div class="invalid-feedback">
+                                    {{ error_message }}
+                                </div>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-check"></i> Validieren
+                    </button>
+                </form>
+                
+                {% if license_plate is not null %}
+                    <div class="mt-4">
+                        <h5>Ergebnis:</h5>
+                        <div class="alert {{ is_valid ? 'alert-success' : 'alert-danger' }}">
+                            <strong>Kennzeichen:</strong> {{ license_plate }}<br>
+                            <strong>Status:</strong> {{ is_valid ? 'Gültig' : 'Ungültig' }}
+                            {% if not is_valid %}
+                                <br><strong>Fehler:</strong> {{ error_message }}
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+                
+                <div class="mt-4">
+                    <h5>Hinweise:</h5>
+                    <ul class="list-unstyled">
+                        <li>✓ Format: <strong>Bezirkscode-Buchstaben Zahlen</strong></li>
+                        <li>✓ Beispiele: <strong>M-AB 123</strong>, <strong>HH-XY 1234</strong>, <strong>B-A 1</strong></li>
+                        <li>✓ Bezirkscode: 1-3 Buchstaben (z.B. M, HH, ABC)</li>
+                        <li>✓ Buchstabenserie: 1-2 Buchstaben (z.B. A, AB, XY)</li>
+                        <li>✓ Zahlen: 1-4 Ziffern (z.B. 1, 123, 1234)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
