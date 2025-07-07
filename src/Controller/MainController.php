@@ -43,11 +43,10 @@ class MainController extends AbstractController
      * Validates German license plates.
      *
      * @param Request $request The HTTP request
-     * @param LicensePlateValidatorService $validatorService The license plate validator service
      * @return Response The response containing the validation result
      */
     #[Route('/license-plate-validator', name: 'app_license_plate_validator')]
-    public function licensePlateValidator(Request $request, LicensePlateValidatorService $validatorService): Response
+    public function licensePlateValidator(Request $request): Response
     {
         $licensePlate = $request->request->get('license_plate');
         $isValid = false;
@@ -62,7 +61,7 @@ class MainController extends AbstractController
                 // Sanitize input to prevent XSS
                 $licensePlate = htmlspecialchars(strip_tags(trim($licensePlate)), ENT_QUOTES, 'UTF-8');
                 
-                $result = $validatorService->validate($licensePlate);
+                $result = $this->licensePlateValidator->validate($licensePlate);
                 $isValid = $result['valid'];
                 $errorMessage = $result['error'];
             }

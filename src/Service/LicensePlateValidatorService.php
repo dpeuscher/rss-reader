@@ -22,7 +22,7 @@ class LicensePlateValidatorService
             'D', 'DA', 'DAH', 'DAN', 'DAU', 'DD', 'DE', 'DEL', 'DH', 'DI', 'DIN', 'DL', 'DM',
             'DN', 'DO', 'DON', 'DU', 'DW',
             'E', 'EA', 'EB', 'ED', 'EE', 'EF', 'EH', 'EI', 'EL', 'EM', 'EN', 'ER', 'ES', 'EU',
-            'F', 'FB', 'FD', 'FG', 'FH', 'FI', 'FL', 'FN', 'FO', 'FR', 'FRG', 'FS', 'FT', 'FU',
+            'F', 'FB', 'FD', 'FFB', 'FG', 'FH', 'FI', 'FL', 'FN', 'FO', 'FR', 'FRG', 'FS', 'FT', 'FU',
             'G', 'GA', 'GAN', 'GAP', 'GC', 'GDB', 'GE', 'GEL', 'GER', 'GF', 'GG', 'GH', 'GI',
             'GL', 'GM', 'GN', 'GO', 'GP', 'GR', 'GS', 'GT', 'GU', 'GV', 'GW', 'GZ',
             'H', 'HA', 'HAL', 'HAM', 'HAS', 'HB', 'HBN', 'HBS', 'HC', 'HD', 'HE', 'HEI', 'HER',
@@ -112,3 +112,4 @@ class LicensePlateValidatorService
         ];
     }
 }
+?>
