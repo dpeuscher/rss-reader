@@ -10,6 +10,10 @@ on:
         required: true
         type: string
 
+concurrency:
+  group: claude-detail-${{ github.event.issue.number || github.event.inputs.issue_number }}
+  cancel-in-progress: true
+
 jobs:
   generate-detail:
     # Run on new issues OR when AI label is present but Story Ready is not

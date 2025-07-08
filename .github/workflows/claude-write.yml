@@ -5,6 +5,10 @@ on:
     types: [labeled]
     # run only when specific label is added
 
+concurrency:
+  group: claude-write-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
 jobs:
   implement-story:
     if: contains(github.event.label.name, 'Story ready')
