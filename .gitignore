@@ -9,3 +9,6 @@
 /var/
 /vendor/
 ###< symfony/framework-bundle ###
+
+# Composer
+composer.phar
