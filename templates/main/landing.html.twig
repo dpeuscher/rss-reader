@@ -1,0 +1,136 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Welcome to RSS Reader{% endblock %}
+
+{% block body %}
+<div class="hero-section bg-light py-5 mb-5">
+    <div class="container">
+        <div class="row justify-content-center text-center">
+            <div class="col-lg-8">
+                <h1 class="display-4 fw-bold mb-4">📰 RSS Reader</h1>
+                <p class="lead mb-4">
+                    Organisieren Sie Ihre RSS-Feeds und bleiben Sie auf dem Laufenden mit den neuesten Artikeln aus Ihren Lieblingsquellen.
+                </p>
+                <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                    <a href="{{ path('app_login') }}" class="btn btn-primary btn-lg px-4 me-md-2">Jetzt anmelden</a>
+                    <a href="#features" class="btn btn-outline-secondary btn-lg px-4">Mehr erfahren</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div id="features" class="row mb-5">
+        <div class="col-12 text-center mb-5">
+            <h2 class="fw-bold">Funktionen</h2>
+            <p class="text-muted">Alles was Sie für ein effizientes RSS-Management brauchen</p>
+        </div>
+        <div class="col-md-4 text-center mb-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="text-primary mb-3">
+                        <i class="fas fa-rss fa-3x"></i>
+                    </div>
+                    <h5 class="card-title">RSS-Feed Management</h5>
+                    <p class="card-text">Fügen Sie Ihre Lieblings-RSS-Feeds hinzu und verwalten Sie sie zentral an einem Ort.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 text-center mb-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="text-primary mb-3">
+                        <i class="fas fa-newspaper fa-3x"></i>
+                    </div>
+                    <h5 class="card-title">Artikel-Übersicht</h5>
+                    <p class="card-text">Behalten Sie den Überblick über alle neuen Artikel und markieren Sie sie als gelesen.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 text-center mb-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="text-primary mb-3">
+                        <i class="fas fa-folder fa-3x"></i>
+                    </div>
+                    <h5 class="card-title">Kategorisierung</h5>
+                    <p class="card-text">Organisieren Sie Ihre Feeds in Kategorien für eine bessere Übersicht.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-5">
+        <div class="col-12 text-center mb-5">
+            <h2 class="fw-bold">Warum RSS Reader?</h2>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="d-flex">
+                <div class="flex-shrink-0">
+                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                        <i class="fas fa-check"></i>
+                    </div>
+                </div>
+                <div class="flex-grow-1 ms-3">
+                    <h5>Einfach zu bedienen</h5>
+                    <p>Intuitive Benutzeroberfläche macht das Verwalten von RSS-Feeds zum Kinderspiel.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="d-flex">
+                <div class="flex-shrink-0">
+                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                </div>
+                <div class="flex-grow-1 ms-3">
+                    <h5>Schnell und zuverlässig</h5>
+                    <p>Basiert auf Symfony 7.1 für optimale Performance und Stabilität.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="d-flex">
+                <div class="flex-shrink-0">
+                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                </div>
+                <div class="flex-grow-1 ms-3">
+                    <h5>Sicher und privat</h5>
+                    <p>Ihre Daten bleiben bei Ihnen. Keine Weitergabe an Dritte.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="d-flex">
+                <div class="flex-shrink-0">
+                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                        <i class="fas fa-mobile-alt"></i>
+                    </div>
+                </div>
+                <div class="flex-grow-1 ms-3">
+                    <h5>Responsive Design</h5>
+                    <p>Funktioniert perfekt auf Desktop, Tablet und Smartphone.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12 text-center">
+            <div class="bg-light p-5 rounded">
+                <h3 class="fw-bold mb-3">Bereit anzufangen?</h3>
+                <p class="mb-4">Melden Sie sich an und beginnen Sie noch heute mit dem Verwalten Ihrer RSS-Feeds.</p>
+                <a href="{{ path('app_login') }}" class="btn btn-primary btn-lg">Jetzt anmelden</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block stylesheets %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+{% endblock %}
+{% endblock %}
