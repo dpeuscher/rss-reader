@@ -30,6 +30,7 @@ jobs:
       - name: Claude – create detailed user story (GitHub)
         env:
           CI_PROVIDER: github
+          TICKET_PROVIDER: github
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           REPO_URL: ${{ github.server_url }}/${{ github.repository }}
           MODE: detail
@@ -64,6 +65,7 @@ jobs:
       - name: Claude – create detailed user story (Forgejo)
         env:
           CI_PROVIDER: forgejo
+          TICKET_PROVIDER: forgejo
           FORGEJO_TOKEN: ${{ secrets.FORGEJO_TOKEN }}
           FORGEJO_BASE_URL: ${{ secrets.FORGEJO_BASE_URL }}
           REPO_URL: ${{ github.server_url }}/${{ github.repository }}
