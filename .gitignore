@@ -9,3 +9,10 @@
 /var/
 /vendor/
 ###< symfony/framework-bundle ###
+
+# Composer
+composer.phar
+
+
+# GitHub workflow history files
+.github/.history/
