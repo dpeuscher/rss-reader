@@ -1,0 +1,83 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Registrierung - RSS Reader{% endblock %}
+
+{% block body %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white text-center">
+                <h4 class="mb-0">
+                    <i class="bi bi-person-plus"></i> Registrierung
+                </h4>
+            </div>
+            <div class="card-body">
+                {% for flash_error in app.flashes('error') %}
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        {{ flash_error }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+
+                {% for flash_success in app.flashes('success') %}
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        {{ flash_success }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+
+                {{ form_start(registrationForm) }}
+                    <div class="mb-3">
+                        {{ form_label(registrationForm.email) }}
+                        {{ form_widget(registrationForm.email) }}
+                        <div class="form-text">
+                            <small class="text-muted">
+                                <i class="bi bi-info-circle"></i> 
+                                Wir senden Ihnen einen Bestätigungslink an diese E-Mail-Adresse.
+                            </small>
+                        </div>
+                        {{ form_errors(registrationForm.email) }}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form_label(registrationForm.plainPassword.first) }}
+                        {{ form_widget(registrationForm.plainPassword.first) }}
+                        <div class="form-text">
+                            <small class="text-muted">
+                                <i class="bi bi-shield-check"></i> 
+                                Mindestens 8 Zeichen mit Groß- und Kleinbuchstaben und einer Zahl.
+                            </small>
+                        </div>
+                        {{ form_errors(registrationForm.plainPassword.first) }}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form_label(registrationForm.plainPassword.second) }}
+                        {{ form_widget(registrationForm.plainPassword.second) }}
+                        {{ form_errors(registrationForm.plainPassword.second) }}
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        {{ form_widget(registrationForm.submit) }}
+                    </div>
+                {{ form_end(registrationForm) }}
+
+                <hr class="my-4">
+                
+                <div class="text-center">
+                    <p class="text-muted">Haben Sie bereits ein Konto?</p>
+                    <a href="{{ path('app_login') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-box-arrow-in-right"></i> Anmelden
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-center mt-3">
+            <a href="{{ path('app_public_landing') }}" class="btn btn-link">
+                <i class="bi bi-arrow-left"></i> Zurück zur Startseite
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
