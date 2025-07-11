@@ -20,6 +20,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?int $id = null;
 
     #[ORM\Column(length: 180)]
+    #[ORM\Index(name: 'idx_user_email')]
     private ?string $email = null;
 
     /**

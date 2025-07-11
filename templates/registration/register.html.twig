@@ -1,0 +1,68 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Registrierung - RSS Reader{% endblock %}
+
+{% block body %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">Registrierung</h4>
+                </div>
+                <div class="card-body">
+                    {% for message in app.flashes('error') %}
+                        <div class="alert alert-danger" role="alert">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+
+                    {% for message in app.flashes('success') %}
+                        <div class="alert alert-success" role="alert">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+
+                    {% if rateLimited %}
+                        <div class="alert alert-warning" role="alert">
+                            <strong>Zu viele Versuche!</strong> Bitte warten Sie einige Minuten, bevor Sie es erneut versuchen.
+                        </div>
+                    {% else %}
+                        {{ form_start(registrationForm) }}
+                            <div class="mb-3">
+                                {{ form_label(registrationForm.email) }}
+                                {{ form_widget(registrationForm.email) }}
+                                {{ form_errors(registrationForm.email) }}
+                            </div>
+
+                            <div class="mb-3">
+                                {{ form_label(registrationForm.plainPassword.first) }}
+                                {{ form_widget(registrationForm.plainPassword.first) }}
+                                {{ form_errors(registrationForm.plainPassword.first) }}
+                            </div>
+
+                            <div class="mb-3">
+                                {{ form_label(registrationForm.plainPassword.second) }}
+                                {{ form_widget(registrationForm.plainPassword.second) }}
+                                {{ form_errors(registrationForm.plainPassword.second) }}
+                            </div>
+
+                            {{ form_errors(registrationForm.plainPassword) }}
+
+                            <div class="d-grid">
+                                {{ form_widget(registrationForm.register) }}
+                            </div>
+
+                            {{ form_rest(registrationForm) }}
+                        {{ form_end(registrationForm) }}
+                    {% endif %}
+
+                    <div class="mt-3 text-center">
+                        <p>Bereits ein Konto? <a href="{{ path('app_login') }}">Hier anmelden</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
