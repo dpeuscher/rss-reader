@@ -23,6 +23,7 @@ jobs:
           password: ${{ secrets.GHCR_TOKEN }}
       - name: Refresh Claude Token & update repository secret (GitHub)
         env:
+          CLAUDE_TOKEN_REFRESH: 1
           CI_PROVIDER: github
           GH_TOKEN: ${{ secrets.PAT_WRITE_SECRETS }}
           GITHUB_REPOSITORY: ${{ github.repository }}
@@ -30,12 +31,12 @@ jobs:
           REFRESH_FORCE: 1
         run: |
           docker run --rm \
+            -e CLAUDE_TOKEN_REFRESH \
             -e CI_PROVIDER \
             -e GH_TOKEN \
             -e GITHUB_REPOSITORY \
             -e CLAUDE_CREDENTIALS_B64 \
             -e REFRESH_FORCE \
-            --entrypoint /usr/local/bin/token-refresh-entrypoint.sh \
             ghcr.io/dpeuscher/claude-code-agent:latest
 
   refresh-token-forgejo:
@@ -51,6 +52,7 @@ jobs:
           password: ${{ secrets.GHCR_TOKEN }}
       - name: Refresh Claude Token & update repository secret (Forgejo)
         env:
+          CLAUDE_TOKEN_REFRESH: 1
           CI_PROVIDER: forgejo
           FORGEJO_TOKEN: ${{ secrets.FORGEJO_TOKEN }}
           FORGEJO_BASE_URL: ${{ secrets.FORGEJO_BASE_URL }}
@@ -59,11 +61,11 @@ jobs:
           REFRESH_FORCE: 1
         run: |
           docker run --rm \
+            -e CLAUDE_TOKEN_REFRESH \
             -e CI_PROVIDER \
             -e FORGEJO_TOKEN \
             -e FORGEJO_BASE_URL \
             -e REPO_URL \
             -e CLAUDE_CREDENTIALS_B64 \
             -e REFRESH_FORCE \
-            --entrypoint /usr/local/bin/token-refresh-entrypoint.sh \
             ghcr.io/dpeuscher/claude-code-agent:latest
