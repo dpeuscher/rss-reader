@@ -152,7 +152,7 @@ function previewFeed() {
     const previewArea = document.getElementById('previewArea');
     const previewContent = document.getElementById('previewContent');
     
-    previewContent.innerHTML = '<div class="spinner-border spinner-border-sm" role="status"></div> Loading preview...';
+    previewContent.innerHTML = '<div class="subtle-loading loading-dots">⟡ Loading preview</div>';
     previewArea.style.display = 'block';
     
     fetch('{{ path('app_feeds_preview', {'id': 'URL_PLACEHOLDER'}) }}'.replace('URL_PLACEHOLDER', encodeURIComponent(url)))

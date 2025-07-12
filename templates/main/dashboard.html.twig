@@ -15,7 +15,7 @@
         <div class="card text-center">
             <div class="card-body">
                 <h5 class="card-title">📰</h5>
-                <h3>0</h3>
+                <h3 class="fixed-width-number">0</h3>
                 <p class="card-text">Unread Articles</p>
             </div>
         </div>
@@ -25,7 +25,7 @@
         <div class="card text-center">
             <div class="card-body">
                 <h5 class="card-title">📡</h5>
-                <h3>0</h3>
+                <h3 class="fixed-width-number">0</h3>
                 <p class="card-text">Active Feeds</p>
             </div>
         </div>
@@ -35,7 +35,7 @@
         <div class="card text-center">
             <div class="card-body">
                 <h5 class="card-title">⭐</h5>
-                <h3>0</h3>
+                <h3 class="fixed-width-number">0</h3>
                 <p class="card-text">Starred Articles</p>
             </div>
         </div>
@@ -45,7 +45,7 @@
         <div class="card text-center">
             <div class="card-body">
                 <h5 class="card-title">📁</h5>
-                <h3>0</h3>
+                <h3 class="fixed-width-number">0</h3>
                 <p class="card-text">Categories</p>
             </div>
         </div>
@@ -73,10 +73,28 @@
                 <div class="d-grid gap-2">
                     <a href="{{ path('app_feeds_index') }}" class="btn btn-primary">Manage RSS-Feed</a>
                     <button class="btn btn-outline-secondary">Mark All as Read</button>
-                    <button class="btn btn-outline-secondary">Refresh All Feeds</button>
+                    <button class="btn btn-outline-secondary" onclick="refreshAllFeeds(this)">Refresh All Feeds</button>
                 </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+function refreshAllFeeds(button) {
+    const originalText = button.innerHTML;
+    button.innerHTML = '<span class="subtle-loading loading-dots">⟡ Refreshing feeds</span>';
+    button.disabled = true;
+    
+    // Simulate feed refresh process
+    setTimeout(() => {
+        button.innerHTML = originalText;
+        button.disabled = false;
+        // TODO: Implement actual feed refresh logic
+        alert('Feed refresh functionality will be implemented');
+    }, 2000);
+}
+</script>
 {% endblock %}
