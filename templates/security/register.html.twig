@@ -1,0 +1,48 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Register!{% endblock %}
+
+{% block body %}
+    <form method="post">
+        {% for message in app.flashes('error') %}
+            <div class="alert alert-danger">{{ message }}</div>
+        {% endfor %}
+
+        {% if app.user %}
+            <div class="mb-3">
+                You are logged in as {{ app.user.userIdentifier }}, <a href="{{ path('app_logout') }}">Logout</a>
+            </div>
+        {% endif %}
+
+        <h1 class="h3 mb-3 font-weight-normal">Create your account</h1>
+        
+        <div class="mb-3">
+            <label for="email">Email</label>
+            <input type="email" value="{{ email|default('') }}" name="email" id="email" class="form-control" autocomplete="email" required autofocus>
+        </div>
+        
+        <div class="mb-3">
+            <label for="password">Password</label>
+            <input type="password" name="password" id="password" class="form-control" autocomplete="new-password" required>
+            <div class="form-text">Password must be at least 6 characters long.</div>
+        </div>
+        
+        <div class="mb-3">
+            <label for="password_confirm">Confirm Password</label>
+            <input type="password" name="password_confirm" id="password_confirm" class="form-control" autocomplete="new-password" required>
+        </div>
+        
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token('register') }}">
+
+        <button class="btn btn-lg btn-primary w-100 mb-3" type="submit">
+            Create Account
+        </button>
+        
+        <div class="text-center">
+            <p class="text-muted">Already have an account?</p>
+            <a href="{{ path('app_login') }}" class="btn btn-outline-secondary">
+                Sign in
+            </a>
+        </div>
+    </form>
+{% endblock %}
