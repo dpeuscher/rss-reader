@@ -1,20 +1,16 @@
-# TEMPLATE – Enable in consumer repo only
-name: Claude – Apply Feedback
+# TEMPLATE ONLY – DO NOT ENABLE IN THE claude-agent REPOSITORY!
+# Copy this file to your own project to automate Claude agent usage.
+
+name: Claude – Apply Ticket Feedback
 
 on:
-  pull_request_review_comment:
-    types: [created]
-  issue_comment:
-    types: [created]
+  issues:
+    types: [labeled]
   workflow_dispatch:
     inputs:
-      pr_number:
-        description: 'Pull request number'
-        required: false
-        type: string
       issue_number:
-        description: 'Issue number'
-        required: false
+        description: 'Target issue number (required for manual run)'
+        required: true
         type: string
       ticket_provider:
         description: 'Ticket provider (github/forgejo/jira/linear)'
@@ -28,12 +24,12 @@ on:
         default: github
 
 concurrency:
-  group: claude-apply-feedback-${{ github.event.pull_request.number || github.event.issue.number }}
-  cancel-in-progress: false
+  group: claude-apply-ticket-feedback-${{ github.event.issue.number || github.event.inputs.issue_number }}
+  cancel-in-progress: true
 
 jobs:
-  apply-feedback-github:
-    if: ${{ startsWith(github.server_url, 'https://github.com') && (github.event.pull_request || (github.event.issue.pull_request && github.event.comment) || github.event_name == 'workflow_dispatch') }}
+  apply-ticket-feedback-github:
+    if: ${{ startsWith(github.server_url, 'https://github.com') && ((github.event.action == 'labeled' && github.event.label.name == 'ai:ticket-apply-feedback') || github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -43,17 +39,14 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_TOKEN }}
-      - name: Claude – apply PR feedback (GitHub)
+      - name: Claude – apply ticket feedback (GitHub)
         env:
           CI_PROVIDER: github
           TICKET_PROVIDER: ${{ github.event.inputs.ticket_provider || 'github' }}
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           REPO_URL: ${{ github.server_url }}/${{ github.repository }}
-          MODE: ${{ github.event.pull_request && 'apply_feedback' || 'apply_issue_feedback' }}
-          COMMENT_BODY: ${{ github.event.comment.body || 'Manual feedback application' }}
-          PR_NUMBER: ${{ github.event.pull_request.number || github.event.inputs.pr_number }}
-          ISSUE_NUMBER: ${{ github.event.issue.number || github.event.inputs.issue_number }}
-          COMMENT_URL: ${{ github.event.comment.html_url }}
+          MODE: apply_ticket_feedback
+          ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
           CLAUDE_CREDENTIALS_B64: ${{ secrets.CLAUDE_CREDENTIALS_B64 }}
           ONLY_AUTOMATE_OWN_ISSUES: 1
           # Provider-specific credentials
@@ -69,10 +62,7 @@ jobs:
             -e GH_TOKEN \
             -e REPO_URL \
             -e MODE \
-            -e COMMENT_BODY \
-            -e PR_NUMBER \
             -e ISSUE_NUMBER \
-            -e COMMENT_URL \
             -e CLAUDE_CREDENTIALS_B64 \
             -e ONLY_AUTOMATE_OWN_ISSUES \
             -e FORGEJO_TOKEN \
@@ -82,8 +72,8 @@ jobs:
             -e LINEAR_TOKEN \
             ghcr.io/dpeuscher/claude-code-agent:latest
 
-  apply-feedback-forgejo:
-    if: ${{ !startsWith(github.server_url, 'https://github.com') && (github.event.pull_request || (github.event.issue.pull_request && github.event.comment) || github.event_name == 'workflow_dispatch') }}
+  apply-ticket-feedback-forgejo:
+    if: ${{ !startsWith(github.server_url, 'https://github.com') && ((github.event.action == 'labeled' && github.event.label.name == 'ai:ticket-apply-feedback') || github.event_name == 'workflow_dispatch') }}
     runs-on: docker
     steps:
       - uses: actions/checkout@v4
@@ -93,18 +83,15 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_TOKEN }}
-      - name: Claude – apply PR feedback (Forgejo)
+      - name: Claude – apply ticket feedback (Forgejo)
         env:
           CI_PROVIDER: forgejo
           TICKET_PROVIDER: ${{ github.event.inputs.ticket_provider || 'forgejo' }}
           FORGEJO_TOKEN: ${{ secrets.FORGEJO_TOKEN }}
           FORGEJO_BASE_URL: ${{ secrets.FORGEJO_BASE_URL }}
           REPO_URL: ${{ github.server_url }}/${{ github.repository }}
-          MODE: ${{ github.event.pull_request && 'apply_feedback' || 'apply_issue_feedback' }}
-          COMMENT_BODY: ${{ github.event.comment.body || 'Manual feedback application' }}
-          PR_NUMBER: ${{ github.event.pull_request.number || github.event.inputs.pr_number }}
-          ISSUE_NUMBER: ${{ github.event.issue.number || github.event.inputs.issue_number }}
-          COMMENT_URL: ${{ github.event.comment.html_url }}
+          MODE: apply_ticket_feedback
+          ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
           CLAUDE_CREDENTIALS_B64: ${{ secrets.CLAUDE_CREDENTIALS_B64 }}
           ONLY_AUTOMATE_OWN_ISSUES: 1
           # Provider-specific credentials
@@ -120,14 +107,11 @@ jobs:
             -e FORGEJO_BASE_URL \
             -e REPO_URL \
             -e MODE \
-            -e COMMENT_BODY \
-            -e PR_NUMBER \
             -e ISSUE_NUMBER \
-            -e COMMENT_URL \
             -e CLAUDE_CREDENTIALS_B64 \
             -e ONLY_AUTOMATE_OWN_ISSUES \
             -e GH_TOKEN \
             -e JIRA_TOKEN \
             -e JIRA_BASE_URL \
             -e LINEAR_TOKEN \
-            ghcr.io/dpeuscher/claude-code-agent:latest
+            ghcr.io/dpeuscher/claude-code-agent:latest 

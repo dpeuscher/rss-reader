@@ -16,8 +16,8 @@ concurrency:
 
 jobs:
   generate-detail-github:
-    # Run on new issues OR when AI label is present but Story Ready is not
-    if: ${{ startsWith(github.server_url, 'https://github.com') && (github.event.action == 'opened' || ((github.event.action == 'labeled' || github.event.action == 'unlabeled') && contains(github.event.issue.labels.*.name, 'AI') && !contains(github.event.issue.labels.*.name, 'Story Ready'))) }}
+    # Run on new issues OR when ai:detail label is present but Story Ready is not AND no bug-related labels
+    if: ${{ startsWith(github.server_url, 'https://github.com') && (github.event.action == 'opened' || ((github.event.action == 'labeled' || github.event.action == 'unlabeled') && contains(github.event.issue.labels.*.name, 'ai:detail') && !contains(github.event.issue.labels.*.name, 'Story Ready') && !contains(github.event.issue.labels.*.name, 'Bug') && !contains(github.event.issue.labels.*.name, 'Investigation') && !contains(github.event.issue.labels.*.name, 'Technical Issue'))) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,11 +30,9 @@ jobs:
       - name: Claude – create detailed user story (GitHub)
         env:
           CI_PROVIDER: github
-          TICKET_PROVIDER: github
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           REPO_URL: ${{ github.server_url }}/${{ github.repository }}
           MODE: detail
-          PROMPT: ${{ github.event.issue.body || github.event.inputs.issue_number && 'Manual detail trigger' }}
           ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
           CLAUDE_CREDENTIALS_B64: ${{ secrets.CLAUDE_CREDENTIALS_B64 }}
           ONLY_AUTOMATE_OWN_ISSUES: 1
@@ -44,15 +42,14 @@ jobs:
             -e GH_TOKEN \
             -e REPO_URL \
             -e MODE \
-            -e PROMPT \
             -e ISSUE_NUMBER \
             -e CLAUDE_CREDENTIALS_B64 \
             -e ONLY_AUTOMATE_OWN_ISSUES \
             ghcr.io/dpeuscher/claude-code-agent:latest
 
   generate-detail-forgejo:
-    # Run on new issues OR when AI label is present but Story Ready is not
-    if: ${{ !startsWith(github.server_url, 'https://github.com') && (github.event.action == 'opened' || ((github.event.action == 'labeled' || github.event.action == 'unlabeled') && contains(github.event.issue.labels.*.name, 'AI') && !contains(github.event.issue.labels.*.name, 'Story Ready'))) }}
+    # Run on new issues OR when ai:detail label is present but Story Ready is not AND no bug-related labels
+    if: ${{ !startsWith(github.server_url, 'https://github.com') && (github.event.action == 'opened' || ((github.event.action == 'labeled' || github.event.action == 'unlabeled') && contains(github.event.issue.labels.*.name, 'ai:detail') && !contains(github.event.issue.labels.*.name, 'Story Ready') && !contains(github.event.issue.labels.*.name, 'Bug') && !contains(github.event.issue.labels.*.name, 'Investigation') && !contains(github.event.issue.labels.*.name, 'Technical Issue'))) }}
     runs-on: docker
     steps:
       - uses: actions/checkout@v4
@@ -65,12 +62,10 @@ jobs:
       - name: Claude – create detailed user story (Forgejo)
         env:
           CI_PROVIDER: forgejo
-          TICKET_PROVIDER: forgejo
           FORGEJO_TOKEN: ${{ secrets.FORGEJO_TOKEN }}
           FORGEJO_BASE_URL: ${{ secrets.FORGEJO_BASE_URL }}
           REPO_URL: ${{ github.server_url }}/${{ github.repository }}
           MODE: detail
-          PROMPT: ${{ github.event.issue.body || github.event.inputs.issue_number && 'Manual detail trigger' }}
           ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
           CLAUDE_CREDENTIALS_B64: ${{ secrets.CLAUDE_CREDENTIALS_B64 }}
           ONLY_AUTOMATE_OWN_ISSUES: 1
@@ -81,7 +76,6 @@ jobs:
             -e FORGEJO_BASE_URL \
             -e REPO_URL \
             -e MODE \
-            -e PROMPT \
             -e ISSUE_NUMBER \
             -e CLAUDE_CREDENTIALS_B64 \
             -e ONLY_AUTOMATE_OWN_ISSUES \

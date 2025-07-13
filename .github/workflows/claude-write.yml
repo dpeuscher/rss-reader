@@ -27,7 +27,6 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           REPO_URL: ${{ github.server_url }}/${{ github.repository }}
           MODE: write
-          PROMPT: ${{ github.event.issue.body }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           CLAUDE_CREDENTIALS_B64: ${{ secrets.CLAUDE_CREDENTIALS_B64 }}
           ONLY_AUTOMATE_OWN_ISSUES: 1
@@ -37,7 +36,6 @@ jobs:
             -e GH_TOKEN \
             -e REPO_URL \
             -e MODE \
-            -e PROMPT \
             -e ISSUE_NUMBER \
             -e CLAUDE_CREDENTIALS_B64 \
             -e ONLY_AUTOMATE_OWN_ISSUES \
@@ -61,7 +59,6 @@ jobs:
           FORGEJO_BASE_URL: ${{ secrets.FORGEJO_BASE_URL }}
           REPO_URL: ${{ github.server_url }}/${{ github.repository }}
           MODE: write
-          PROMPT: ${{ github.event.issue.body }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           CLAUDE_CREDENTIALS_B64: ${{ secrets.CLAUDE_CREDENTIALS_B64 }}
           ONLY_AUTOMATE_OWN_ISSUES: 1
@@ -72,7 +69,6 @@ jobs:
             -e FORGEJO_BASE_URL \
             -e REPO_URL \
             -e MODE \
-            -e PROMPT \
             -e ISSUE_NUMBER \
             -e CLAUDE_CREDENTIALS_B64 \
             -e ONLY_AUTOMATE_OWN_ISSUES \
