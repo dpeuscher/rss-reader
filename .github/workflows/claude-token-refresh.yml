@@ -25,7 +25,7 @@ jobs:
         env:
           CLAUDE_TOKEN_REFRESH: 1
           CI_PROVIDER: github
-          GH_TOKEN: ${{ secrets.PAT_WRITE_SECRETS }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           CLAUDE_CREDENTIALS_B64: ${{ secrets.CLAUDE_CREDENTIALS_B64 }}
           REFRESH_FORCE: 1
