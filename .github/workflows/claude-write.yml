@@ -3,15 +3,30 @@ name: Claude – Implement Story
 on:
   issues:
     types: [labeled]
-    # run only when specific label is added
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue number to implement'
+        required: true
+        type: string
+      ticket_provider:
+        description: 'Ticket provider (github/forgejo/jira/linear)'
+        required: false
+        type: choice
+        options:
+          - github
+          - forgejo
+          - jira
+          - linear
+        default: github
 
 concurrency:
-  group: claude-write-${{ github.event.issue.number }}
+  group: claude-write-${{ github.event.issue.number || github.event.inputs.issue_number }}
   cancel-in-progress: true
 
 jobs:
   implement-story-github:
-    if: ${{ startsWith(github.server_url, 'https://github.com') && contains(github.event.label.name, 'Story ready') }}
+    if: ${{ startsWith(github.server_url, 'https://github.com') && ((github.event.action == 'labeled' && github.event.label.name == 'ai:ticket-implement') || github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,25 +39,38 @@ jobs:
       - name: Claude – implement story (GitHub)
         env:
           CI_PROVIDER: github
+          TICKET_PROVIDER: ${{ github.event.inputs.ticket_provider || 'github' }}
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           REPO_URL: ${{ github.server_url }}/${{ github.repository }}
           MODE: write
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_NUMBER: ${{ github.event.issue.number || github.event.inputs.issue_number }}
           CLAUDE_CREDENTIALS_B64: ${{ secrets.CLAUDE_CREDENTIALS_B64 }}
           ONLY_AUTOMATE_OWN_ISSUES: 1
+          # Provider-specific credentials
+          FORGEJO_TOKEN: ${{ secrets.FORGEJO_TOKEN }}
+          FORGEJO_BASE_URL: ${{ secrets.FORGEJO_BASE_URL }}
+          JIRA_TOKEN: ${{ secrets.JIRA_TOKEN }}
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          LINEAR_TOKEN: ${{ secrets.LINEAR_TOKEN }}
         run: |
           docker run --rm \
             -e CI_PROVIDER \
+            -e TICKET_PROVIDER \
             -e GH_TOKEN \
             -e REPO_URL \
             -e MODE \
             -e ISSUE_NUMBER \
             -e CLAUDE_CREDENTIALS_B64 \
             -e ONLY_AUTOMATE_OWN_ISSUES \
+            -e FORGEJO_TOKEN \
+            -e FORGEJO_BASE_URL \
+            -e JIRA_TOKEN \
+            -e JIRA_BASE_URL \
+            -e LINEAR_TOKEN \
             ghcr.io/dpeuscher/claude-code-agent:latest
 
   implement-story-forgejo:
-    if: ${{ !startsWith(github.server_url, 'https://github.com') && contains(github.event.label.name, 'Story ready') }}
+    if: ${{ !startsWith(github.server_url, 'https://github.com') && ((github.event.action == 'labeled' && github.event.label.name == 'ai:ticket-implement') || github.event_name == 'workflow_dispatch') }}
     runs-on: docker
     steps:
       - uses: actions/checkout@v4
@@ -55,16 +83,23 @@ jobs:
       - name: Claude – implement story (Forgejo)
         env:
           CI_PROVIDER: forgejo
+          TICKET_PROVIDER: ${{ github.event.inputs.ticket_provider || 'forgejo' }}
           FORGEJO_TOKEN: ${{ secrets.FORGEJO_TOKEN }}
           FORGEJO_BASE_URL: ${{ secrets.FORGEJO_BASE_URL }}
           REPO_URL: ${{ github.server_url }}/${{ github.repository }}
           MODE: write
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_NUMBER: ${{ github.event.issue.number || github.event.inputs.issue_number }}
           CLAUDE_CREDENTIALS_B64: ${{ secrets.CLAUDE_CREDENTIALS_B64 }}
           ONLY_AUTOMATE_OWN_ISSUES: 1
+          # Provider-specific credentials
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          JIRA_TOKEN: ${{ secrets.JIRA_TOKEN }}
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          LINEAR_TOKEN: ${{ secrets.LINEAR_TOKEN }}
         run: |
           docker run --rm \
             -e CI_PROVIDER \
+            -e TICKET_PROVIDER \
             -e FORGEJO_TOKEN \
             -e FORGEJO_BASE_URL \
             -e REPO_URL \
@@ -72,4 +107,8 @@ jobs:
             -e ISSUE_NUMBER \
             -e CLAUDE_CREDENTIALS_B64 \
             -e ONLY_AUTOMATE_OWN_ISSUES \
-            ghcr.io/dpeuscher/claude-code-agent:latest
+            -e GH_TOKEN \
+            -e JIRA_TOKEN \
+            -e JIRA_BASE_URL \
+            -e LINEAR_TOKEN \
+            ghcr.io/dpeuscher/claude-code-agent:latest 
