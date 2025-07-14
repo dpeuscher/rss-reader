@@ -41,7 +41,7 @@
                             </a>
                         </h5>
                         {% if article.summary %}
-                            <p class="card-text">{{ article.summary|slice(0, 300) }}{% if article.summary|length > 300 %}...{% endif %}</p>
+                            <p class="card-text">{{ article.summary|slice(0, 300)|e }}{% if article.summary|length > 300 %}...{% endif %}</p>
                         {% endif %}
                         <div class="card-footer text-muted">
                             <small>Published: {{ article.publishedAt|date('Y-m-d H:i') }}</small>

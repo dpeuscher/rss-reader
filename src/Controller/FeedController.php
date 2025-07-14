@@ -12,6 +12,8 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Csrf\CsrfToken;
+use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
 
 #[Route('/feeds')]
 class FeedController extends AbstractController
@@ -114,9 +116,16 @@ class FeedController extends AbstractController
         int $id,
         Request $request,
         SubscriptionRepository $subscriptionRepo,
-        EntityManagerInterface $entityManager
+        EntityManagerInterface $entityManager,
+        CsrfTokenManagerInterface $csrfTokenManager
     ): Response {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+        
+        // Validate CSRF token
+        $submittedToken = $request->request->get('_token');
+        if (!$csrfTokenManager->isTokenValid(new CsrfToken('update_settings', $submittedToken))) {
+            return $this->json(['error' => 'Invalid CSRF token'], 403);
+        }
         
         $subscription = $subscriptionRepo->findByUserAndFeed($this->getUser()->getId(), $id);
         
@@ -127,11 +136,11 @@ class FeedController extends AbstractController
         $entryLimit = $request->request->get('entry_limit');
         
         if ($entryLimit !== null && $entryLimit !== '') {
-            $entryLimit = (int) $entryLimit;
-            if ($entryLimit < 1 || $entryLimit > 100) {
+            $validatedLimit = filter_var($entryLimit, FILTER_VALIDATE_INT);
+            if ($validatedLimit === false || $validatedLimit < 1 || $validatedLimit > 100) {
                 return $this->json(['error' => 'Entry limit must be between 1 and 100'], 400);
             }
-            $subscription->setEntryLimit($entryLimit);
+            $subscription->setEntryLimit($validatedLimit);
         } else {
             $subscription->setEntryLimit(null); // Use default
         }

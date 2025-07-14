@@ -14,7 +14,7 @@
                         <h6><a href="{{ article.url }}" target="_blank">{{ article.title }}</a></h6>
                         <small class="text-muted">{{ article.publishedAt|date('M j, Y g:i A') }}</small>
                         {% if article.summary %}
-                            <p class="mb-0 mt-1">{{ article.summary|slice(0, 100) }}...</p>
+                            <p class="mb-0 mt-1">{{ article.summary|slice(0, 100)|e }}...</p>
                         {% endif %}
                     </div>
                 {% endfor %}

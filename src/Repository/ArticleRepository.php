@@ -19,6 +19,7 @@ class ArticleRepository extends ServiceEntityRepository
     public function findByUserAndFilters(int $userId, array $filters = [], ?int $limit = null, int $offset = 0): array
     {
         $qb = $this->createQueryBuilder('a')
+            ->addSelect('f')
             ->leftJoin('a.userArticles', 'ua')
             ->leftJoin('a.feed', 'f')
             ->leftJoin('f.subscriptions', 's')

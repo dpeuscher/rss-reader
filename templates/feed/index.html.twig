@@ -145,6 +145,7 @@
             </div>
             <form id="configureLimitForm">
                 <div class="modal-body">
+                    <input type="hidden" name="_token" value="{{ csrf_token('update_settings') }}">
                     <div class="mb-3">
                         <label for="entryLimit" class="form-label">Maximum entries to display</label>
                         <input type="number" class="form-control" id="entryLimit" name="entry_limit" 

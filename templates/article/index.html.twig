@@ -27,7 +27,7 @@
                                 {{ article.title }}
                             </a>
                         </h5>
-                        <p class="card-text">{{ article.summary|slice(0, 200) }}{% if article.summary|length > 200 %}...{% endif %}</p>
+                        <p class="card-text">{{ article.summary|slice(0, 200)|e }}{% if article.summary|length > 200 %}...{% endif %}</p>
                         <div class="card-footer text-muted">
                             <small>
                                 Published: {{ article.publishedAt|date('Y-m-d H:i') }} | 
