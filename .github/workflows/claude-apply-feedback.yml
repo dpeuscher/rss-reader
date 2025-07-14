@@ -1,4 +1,3 @@
-# TEMPLATE – Enable in consumer repo only
 name: Claude – Apply Feedback
 
 on:
@@ -33,7 +32,7 @@ concurrency:
 
 jobs:
   apply-feedback-github:
-    if: ${{ startsWith(github.server_url, 'https://github.com') && (github.event.pull_request || (github.event.issue.pull_request && github.event.comment) || github.event_name == 'workflow_dispatch') }}
+    if: ${{ startsWith(github.server_url, 'https://github.com') && ((github.event.action == 'labeled' && github.event.label.name == 'ai:pr-apply-feedback') || github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -83,7 +82,7 @@ jobs:
             ghcr.io/dpeuscher/claude-code-agent:latest
 
   apply-feedback-forgejo:
-    if: ${{ !startsWith(github.server_url, 'https://github.com') && (github.event.pull_request || (github.event.issue.pull_request && github.event.comment) || github.event_name == 'workflow_dispatch') }}
+    if: ${{ !startsWith(github.server_url, 'https://github.com') && ((github.event.action == 'labeled' && github.event.label.name == 'ai:pr-apply-feedback') || github.event_name == 'workflow_dispatch') }}
     runs-on: docker
     steps:
       - uses: actions/checkout@v4
@@ -130,4 +129,4 @@ jobs:
             -e JIRA_TOKEN \
             -e JIRA_BASE_URL \
             -e LINEAR_TOKEN \
-            ghcr.io/dpeuscher/claude-code-agent:latest
+            ghcr.io/dpeuscher/claude-code-agent:latest 

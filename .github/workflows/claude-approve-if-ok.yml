@@ -1,4 +1,4 @@
-name: Claude – Approve When OK
+name: Claude – Approve If OK
 
 on:
   pull_request:
@@ -13,7 +13,7 @@ on:
         type: string
 
 concurrency:
-  group: claude-approve-when-ok-${{ github.event.pull_request.number || github.event.inputs.pr_number }}
+  group: claude-approve-if-ok-${{ github.event.pull_request.number || github.event.inputs.pr_number }}
   cancel-in-progress: true
 
 jobs:
@@ -28,12 +28,12 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_TOKEN }}
-      - name: Claude – approve PR when OK (GitHub)
+      - name: Claude – approve PR if OK (GitHub)
         env:
           CI_PROVIDER: github
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           REPO_URL: ${{ github.server_url }}/${{ github.repository }}
-          MODE: approve_when_ok
+          MODE: approve_if_ok
           PR_NUMBER: ${{ github.event.pull_request.number || github.event.check_suite.pull_requests[0].number || github.event.inputs.pr_number }}
           CLAUDE_CREDENTIALS_B64: ${{ secrets.CLAUDE_CREDENTIALS_B64 }}
           # Provider-specific credentials
@@ -68,13 +68,13 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_TOKEN }}
-      - name: Claude – approve PR when OK (Forgejo)
+      - name: Claude – approve PR if OK (Forgejo)
         env:
           CI_PROVIDER: forgejo
           FORGEJO_TOKEN: ${{ secrets.FORGEJO_TOKEN }}
           FORGEJO_BASE_URL: ${{ secrets.FORGEJO_BASE_URL }}
           REPO_URL: ${{ github.server_url }}/${{ github.repository }}
-          MODE: approve_when_ok
+          MODE: approve_if_ok
           PR_NUMBER: ${{ github.event.pull_request.number || github.event.check_suite.pull_requests[0].number || github.event.inputs.pr_number }}
           CLAUDE_CREDENTIALS_B64: ${{ secrets.CLAUDE_CREDENTIALS_B64 }}
           # Provider-specific credentials
