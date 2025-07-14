@@ -1,10 +1,8 @@
 name: Claude – Apply Feedback
 
 on:
-  pull_request_review_comment:
-    types: [created]
-  issue_comment:
-    types: [created]
+  pull_request:
+    types: [labeled]
   workflow_dispatch:
     inputs:
       pr_number:
