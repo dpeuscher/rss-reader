@@ -57,14 +57,25 @@ class FeedParserService
         return new ParsedFeed($feed);
     }
 
-    public function extractArticles(ParsedFeed $parsedFeed): array
+    public function extractArticles(ParsedFeed $parsedFeed, ?int $limit = null): array
     {
         $articles = [];
         $feed = $parsedFeed->getFeed();
+        $count = 0;
 
         foreach ($feed as $entry) {
             $articles[] = $this->createArticleFromEntry($entry);
+            $count++;
+            
+            if ($limit !== null && $count >= $limit) {
+                break;
+            }
         }
+
+        // Sort by publication date (newest first) in case feed entries aren't in order
+        usort($articles, function(Article $a, Article $b) {
+            return $b->getPublishedAt() <=> $a->getPublishedAt();
+        });
 
         return $articles;
     }

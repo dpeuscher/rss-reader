@@ -94,4 +94,24 @@ class Subscription
         $this->preferences = $preferences;
         return $this;
     }
+
+    public function getEntryLimit(): ?int
+    {
+        return $this->preferences['entry_limit'] ?? null;
+    }
+
+    public function setEntryLimit(?int $limit): static
+    {
+        if ($limit === null) {
+            unset($this->preferences['entry_limit']);
+        } else {
+            $this->preferences['entry_limit'] = $limit;
+        }
+        return $this;
+    }
+
+    public function getEffectiveEntryLimit(int $defaultLimit = 20): int
+    {
+        return $this->getEntryLimit() ?? $defaultLimit;
+    }
 }

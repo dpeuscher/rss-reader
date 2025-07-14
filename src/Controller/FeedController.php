@@ -109,6 +109,39 @@ class FeedController extends AbstractController
         }
     }
 
+    #[Route('/{id}/settings', name: 'app_feeds_settings', methods: ['POST'])]
+    public function updateSettings(
+        int $id,
+        Request $request,
+        SubscriptionRepository $subscriptionRepo,
+        EntityManagerInterface $entityManager
+    ): Response {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+        
+        $subscription = $subscriptionRepo->findByUserAndFeed($this->getUser()->getId(), $id);
+        
+        if (!$subscription) {
+            return $this->json(['error' => 'Subscription not found'], 404);
+        }
+        
+        $entryLimit = $request->request->get('entry_limit');
+        
+        if ($entryLimit !== null && $entryLimit !== '') {
+            $entryLimit = (int) $entryLimit;
+            if ($entryLimit < 1 || $entryLimit > 100) {
+                return $this->json(['error' => 'Entry limit must be between 1 and 100'], 400);
+            }
+            $subscription->setEntryLimit($entryLimit);
+        } else {
+            $subscription->setEntryLimit(null); // Use default
+        }
+        
+        $entityManager->persist($subscription);
+        $entityManager->flush();
+        
+        return $this->json(['success' => 'Settings updated']);
+    }
+
     #[Route('/{id}', name: 'app_feeds_delete', methods: ['DELETE'])]
     public function delete(
         int $id,
