@@ -1,3 +1,6 @@
+# TEMPLATE ONLY – DO NOT ENABLE IN THE claude-agent REPOSITORY!
+# Copy this file to your own project to automate Claude agent usage.
+
 name: Claude – PR Review
 
 on:
@@ -26,7 +29,7 @@ concurrency:
 
 jobs:
   review-pr-github:
-    if: ${{ startsWith(github.server_url, 'https://github.com') && ((github.event.action == 'labeled' && github.event.label.name == 'ai:step-08:pr-review') || github.event_name == 'workflow_dispatch') }}
+    if: ${{ startsWith(github.server_url, 'https://github.com') && ((github.event.action == 'labeled' && github.event.label.name == 'ai:step-09:pr-review') || github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -68,7 +71,7 @@ jobs:
             ghcr.io/dpeuscher/claude-code-agent:latest
 
   review-pr-forgejo:
-    if: ${{ !startsWith(github.server_url, 'https://github.com') && ((github.event.action == 'labeled' && github.event.label.name == 'ai:step-08:pr-review') || github.event_name == 'workflow_dispatch') }}
+    if: ${{ !startsWith(github.server_url, 'https://github.com') && ((github.event.action == 'labeled' && github.event.label.name == 'ai:step-09:pr-review') || github.event_name == 'workflow_dispatch') }}
     runs-on: docker
     steps:
       - uses: actions/checkout@v4
