@@ -26,8 +26,8 @@ concurrency:
 
 jobs:
   generate-detail-github:
-    # Run on new issues OR when ai:detail label is present but Story Ready is not AND no bug-related labels
-    if: ${{ startsWith(github.server_url, 'https://github.com') && (github.event.action == 'opened' || ((github.event.action == 'labeled' || github.event.action == 'unlabeled') && contains(github.event.issue.labels.*.name, 'ai:detail') && !contains(github.event.issue.labels.*.name, 'Story Ready') && !contains(github.event.issue.labels.*.name, 'Bug') && !contains(github.event.issue.labels.*.name, 'Investigation') && !contains(github.event.issue.labels.*.name, 'Technical Issue'))) }}
+    # Run on new issues OR when ai:step-01:detail label is present but Story Ready is not AND no bug-related labels
+    if: ${{ startsWith(github.server_url, 'https://github.com') && (github.event.action == 'opened' || ((github.event.action == 'labeled' || github.event.action == 'unlabeled') && contains(github.event.issue.labels.*.name, 'ai:step-01:detail') && !contains(github.event.issue.labels.*.name, 'Story Ready') && !contains(github.event.issue.labels.*.name, 'Bug') && !contains(github.event.issue.labels.*.name, 'Investigation') && !contains(github.event.issue.labels.*.name, 'Technical Issue'))) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -68,8 +68,8 @@ jobs:
             ghcr.io/dpeuscher/claude-code-agent:latest
 
   generate-detail-forgejo:
-    # Run on new issues OR when ai:detail label is present but Story Ready is not AND no bug-related labels
-    if: ${{ !startsWith(github.server_url, 'https://github.com') && (github.event.action == 'opened' || ((github.event.action == 'labeled' || github.event.action == 'unlabeled') && contains(github.event.issue.labels.*.name, 'ai:detail') && !contains(github.event.issue.labels.*.name, 'Story Ready') && !contains(github.event.issue.labels.*.name, 'Bug') && !contains(github.event.issue.labels.*.name, 'Investigation') && !contains(github.event.issue.labels.*.name, 'Technical Issue'))) }}
+    # Run on new issues OR when ai:step-01:detail label is present but Story Ready is not AND no bug-related labels
+    if: ${{ !startsWith(github.server_url, 'https://github.com') && (github.event.action == 'opened' || ((github.event.action == 'labeled' || github.event.action == 'unlabeled') && contains(github.event.issue.labels.*.name, 'ai:step-01:detail'))) }}
     runs-on: docker
     steps:
       - uses: actions/checkout@v4

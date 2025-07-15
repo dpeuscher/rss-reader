@@ -1,8 +1,11 @@
+# TEMPLATE ONLY – DO NOT ENABLE IN THE claude-agent REPOSITORY!
+# Copy this file to your own project to automate Claude token refresh.
+
 name: Claude – Token Refresh
 
 on:
   schedule:
-    - cron: '0 */6 * * *'  # Every 6 hours
+    - cron: '0 */6 * * *'  # Every 4 hours
   workflow_dispatch:
 
 concurrency:
@@ -68,4 +71,4 @@ jobs:
             -e REPO_URL \
             -e CLAUDE_CREDENTIALS_B64 \
             -e REFRESH_FORCE \
-            ghcr.io/dpeuscher/claude-code-agent:latest
+            ghcr.io/dpeuscher/claude-code-agent:latest 

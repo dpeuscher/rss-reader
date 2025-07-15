@@ -30,7 +30,7 @@ concurrency:
 
 jobs:
   apply-feedback-github:
-    if: ${{ startsWith(github.server_url, 'https://github.com') && ((github.event.action == 'labeled' && github.event.label.name == 'ai:pr-apply-feedback') || github.event_name == 'workflow_dispatch') }}
+    if: ${{ startsWith(github.server_url, 'https://github.com') && ((github.event.action == 'labeled' && github.event.label.name == 'ai:step-09:pr-apply-feedback') || github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -80,7 +80,7 @@ jobs:
             ghcr.io/dpeuscher/claude-code-agent:latest
 
   apply-feedback-forgejo:
-    if: ${{ !startsWith(github.server_url, 'https://github.com') && ((github.event.action == 'labeled' && github.event.label.name == 'ai:pr-apply-feedback') || github.event_name == 'workflow_dispatch') }}
+    if: ${{ !startsWith(github.server_url, 'https://github.com') && ((github.event.action == 'labeled' && github.event.label.name == 'ai:step-09:pr-apply-feedback') || github.event_name == 'workflow_dispatch') }}
     runs-on: docker
     steps:
       - uses: actions/checkout@v4
