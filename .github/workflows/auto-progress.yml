@@ -34,6 +34,7 @@ jobs:
           LABEL_NAME: ${{ github.event.label.name || '' }}
           ENABLE_AGENT_AUTO_PROGRESS: 0
           AUTO_PROGRESS_BY_LABEL: 1
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
         run: |
           docker run --rm \
             -e CI_PROVIDER \
@@ -45,4 +46,5 @@ jobs:
             -e LABEL_NAME \
             -e ENABLE_AGENT_AUTO_PROGRESS \
             -e AUTO_PROGRESS_BY_LABEL \
+            -e REPO_URL \
             ghcr.io/dpeuscher/claude-code-agent:latest 
