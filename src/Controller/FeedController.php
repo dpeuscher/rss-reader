@@ -12,6 +12,8 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Csrf\CsrfToken;
+use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
 
 #[Route('/feeds')]
 class FeedController extends AbstractController
@@ -107,6 +109,46 @@ class FeedController extends AbstractController
         } catch (\Exception $e) {
             return $this->json(['error' => 'Error previewing feed: ' . $e->getMessage()], 500);
         }
+    }
+
+    #[Route('/{id}/settings', name: 'app_feeds_settings', methods: ['POST'])]
+    public function updateSettings(
+        int $id,
+        Request $request,
+        SubscriptionRepository $subscriptionRepo,
+        EntityManagerInterface $entityManager,
+        CsrfTokenManagerInterface $csrfTokenManager
+    ): Response {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+        
+        // Validate CSRF token
+        $submittedToken = $request->request->get('_token');
+        if (!$csrfTokenManager->isTokenValid(new CsrfToken('update_settings', $submittedToken))) {
+            return $this->json(['error' => 'Invalid CSRF token'], 403);
+        }
+        
+        $subscription = $subscriptionRepo->findByUserAndFeed($this->getUser()->getId(), $id);
+        
+        if (!$subscription) {
+            return $this->json(['error' => 'Subscription not found'], 404);
+        }
+        
+        $entryLimit = $request->request->get('entry_limit');
+        
+        if ($entryLimit !== null && $entryLimit !== '') {
+            $validatedLimit = filter_var($entryLimit, FILTER_VALIDATE_INT);
+            if ($validatedLimit === false || $validatedLimit < 1 || $validatedLimit > 100) {
+                return $this->json(['error' => 'Entry limit must be between 1 and 100'], 400);
+            }
+            $subscription->setEntryLimit($validatedLimit);
+        } else {
+            $subscription->setEntryLimit(null); // Use default
+        }
+        
+        $entityManager->persist($subscription);
+        $entityManager->flush();
+        
+        return $this->json(['success' => 'Settings updated']);
     }
 
     #[Route('/{id}', name: 'app_feeds_delete', methods: ['DELETE'])]

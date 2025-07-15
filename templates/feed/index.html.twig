@@ -25,6 +25,7 @@
                                 <tr>
                                     <th>Feed</th>
                                     <th>Category</th>
+                                    <th>Entry Limit</th>
                                     <th>Status</th>
                                     <th>Last Updated</th>
                                     <th>Actions</th>
@@ -46,6 +47,16 @@
                                             {% endif %}
                                         </td>
                                         <td>
+                                            <span class="badge bg-info" id="limit-badge-{{ subscription.feed.id }}">
+                                                {{ subscription.effectiveEntryLimit }}
+                                            </span>
+                                            {% if subscription.entryLimit %}
+                                                <small class="text-muted d-block">Custom</small>
+                                            {% else %}
+                                                <small class="text-muted d-block">Default</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
                                             <span class="badge {% if subscription.feed.status == 'active' %}bg-success{% else %}bg-danger{% endif %}">
                                                 {{ subscription.feed.status }}
                                             </span>
@@ -55,8 +66,13 @@
                                         </td>
                                         <td>
                                             <div class="btn-group btn-group-sm">
-                                                <button class="btn btn-outline-primary" onclick="refreshFeed({{ subscription.feed.id }})">
-                                                    Refresh
+                                                <a href="{{ path('app_articles_by_feed', {'feedId': subscription.feed.id}) }}" 
+                                                   class="btn btn-outline-primary">
+                                                    View Articles
+                                                </a>
+                                                <button class="btn btn-outline-secondary" 
+                                                        onclick="configureLimit({{ subscription.feed.id }}, {{ subscription.effectiveEntryLimit }})">
+                                                    Configure
                                                 </button>
                                                 <button class="btn btn-outline-danger" onclick="deleteFeed({{ subscription.feed.id }})">
                                                     Remove
@@ -119,6 +135,41 @@
     </div>
 </div>
 
+<!-- Configure Entry Limit Modal -->
+<div class="modal fade" id="configureLimitModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Configure Entry Limit</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="configureLimitForm">
+                <div class="modal-body">
+                    <input type="hidden" name="_token" value="{{ csrf_token('update_settings') }}">
+                    <div class="mb-3">
+                        <label for="entryLimit" class="form-label">Maximum entries to display</label>
+                        <input type="number" class="form-control" id="entryLimit" name="entry_limit" 
+                               min="1" max="100" placeholder="20">
+                        <div class="form-text">
+                            Enter a number between 1 and 100. Leave empty to use the default (20).
+                        </div>
+                    </div>
+                    <div class="alert alert-info">
+                        <small>
+                            <strong>Note:</strong> This setting only affects how many entries are displayed per page. 
+                            All entries are still stored and can be accessed through pagination.
+                        </small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Limit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block javascripts %}
@@ -164,6 +215,38 @@ function previewFeed() {
             previewContent.innerHTML = '<div class="alert alert-danger">Error loading preview</div>';
         });
 }
+
+let currentFeedId = null;
+
+function configureLimit(feedId, currentLimit) {
+    currentFeedId = feedId;
+    const entryLimitInput = document.getElementById('entryLimit');
+    entryLimitInput.value = currentLimit;
+    
+    const modal = new bootstrap.Modal(document.getElementById('configureLimitModal'));
+    modal.show();
+}
+
+document.getElementById('configureLimitForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    if (!currentFeedId) return;
+    
+    const formData = new FormData(this);
+    
+    fetch(`{{ path('app_feeds_index') }}/${currentFeedId}/settings`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    });
+});
 
 function refreshFeed(feedId) {
     // TODO: Implement feed refresh

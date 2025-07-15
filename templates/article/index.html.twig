@@ -1,0 +1,72 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Articles{% endblock %}
+
+{% block body %}
+<div class="container">
+    <h1>Articles</h1>
+    
+    {% if total_count > 0 %}
+        <div class="article-stats mb-3">
+            <span class="text-muted">
+                {% if total_count <= limit %}
+                    Showing all {{ total_count }} entries
+                {% else %}
+                    Showing {{ showing_count }} of {{ total_count }} entries
+                    {% if has_more %}(limited to {{ limit }} per page){% endif %}
+                {% endif %}
+            </span>
+        </div>
+        
+        <div class="articles">
+            {% for article in articles %}
+                <article class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <a href="{{ article.url }}" target="_blank" rel="noopener noreferrer">
+                                {{ article.title }}
+                            </a>
+                        </h5>
+                        <p class="card-text">{{ article.summary|slice(0, 200)|e }}{% if article.summary|length > 200 %}...{% endif %}</p>
+                        <div class="card-footer text-muted">
+                            <small>
+                                Published: {{ article.publishedAt|date('Y-m-d H:i') }} | 
+                                Feed: {{ article.feed.title }}
+                            </small>
+                        </div>
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+        
+        {% if page > 1 or has_more %}
+            <nav aria-label="Article pagination">
+                <ul class="pagination">
+                    {% if page > 1 %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ path('app_articles_index', {'page': page - 1, 'feed_id': feed_id}) }}">Previous</a>
+                        </li>
+                    {% endif %}
+                    
+                    <li class="page-item active">
+                        <span class="page-link">{{ page }}</span>
+                    </li>
+                    
+                    {% if has_more %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ path('app_articles_index', {'page': page + 1, 'feed_id': feed_id}) }}">Next</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    {% else %}
+        <div class="alert alert-info">
+            <p>No entries available.</p>
+            {% if feed_id %}
+                <a href="{{ path('app_feeds_index') }}" class="btn btn-primary">Back to Feeds</a>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
