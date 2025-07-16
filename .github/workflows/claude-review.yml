@@ -24,7 +24,7 @@ on:
         default: github
 
 concurrency:
-  group: claude-review-${{ github.event.pull_request.number || github.event.inputs.pr_number }}
+  group: claude-review-${{ github.event.pull_request.number || github.event.inputs.pr_number }}-${{ github.event.label.name || 'manual' }}
   cancel-in-progress: true
 
 jobs:

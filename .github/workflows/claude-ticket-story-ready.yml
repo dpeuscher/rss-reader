@@ -1,23 +1,32 @@
-# TEMPLATE – Enable in consumer repo only
-name: Claude – Approve If OK
+name: Claude – Ticket Story Ready
 
 on:
-  pull_request:
+  issues:
     types: [labeled]
   workflow_dispatch:
     inputs:
-      pr_number:
-        description: 'Pull request number to approve'
+      issue_number:
+        description: 'Target issue number (required for manual run)'
         required: true
         type: string
+      ticket_provider:
+        description: 'Ticket provider (github/forgejo/jira/linear)'
+        required: false
+        type: choice
+        options:
+          - github
+          - forgejo
+          - jira
+          - linear
+        default: github
 
 concurrency:
-  group: claude-approve-if-ok-${{ github.event.pull_request.number || github.event.inputs.pr_number }}-${{ github.event.label.name || 'manual' }}
+  group: claude-ticket-story-ready-${{ github.event.issue.number || github.event.inputs.issue_number }}-${{ github.event.label.name || 'manual' }}
   cancel-in-progress: true
 
 jobs:
-  approve-pr-github:
-    if: ${{ startsWith(github.server_url, 'https://github.com') && ((github.event.action == 'labeled' && github.event.label.name == 'ai:step-11:approve-if-ok') || github.event_name == 'workflow_dispatch') }}
+  ticket-story-ready-github:
+    if: ${{ startsWith(github.server_url, 'https://github.com') && ((github.event.action == 'labeled' && github.event.label.name == 'ai:step-07:ticket-story-ready') || github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -27,14 +36,16 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_TOKEN }}
-      - name: Claude – approve PR if OK (GitHub)
+      - name: Claude – ticket story ready (GitHub)
         env:
           CI_PROVIDER: github
+          TICKET_PROVIDER: ${{ github.event.inputs.ticket_provider || 'github' }}
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           REPO_URL: ${{ github.server_url }}/${{ github.repository }}
-          MODE: approve_if_ok
-          PR_NUMBER: ${{ github.event.pull_request.number || github.event.check_suite.pull_requests[0].number || github.event.inputs.pr_number }}
+          MODE: ticket_story_ready
+          ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
           CLAUDE_CREDENTIALS_B64: ${{ secrets.CLAUDE_CREDENTIALS_B64 }}
+          ONLY_AUTOMATE_OWN_ISSUES: 1
           # Provider-specific credentials
           FORGEJO_TOKEN: ${{ secrets.FORGEJO_TOKEN }}
           FORGEJO_BASE_URL: ${{ secrets.FORGEJO_BASE_URL }}
@@ -44,11 +55,13 @@ jobs:
         run: |
           docker run --rm \
             -e CI_PROVIDER \
+            -e TICKET_PROVIDER \
             -e GH_TOKEN \
             -e REPO_URL \
             -e MODE \
-            -e PR_NUMBER \
+            -e ISSUE_NUMBER \
             -e CLAUDE_CREDENTIALS_B64 \
+            -e ONLY_AUTOMATE_OWN_ISSUES \
             -e FORGEJO_TOKEN \
             -e FORGEJO_BASE_URL \
             -e JIRA_TOKEN \
@@ -56,8 +69,8 @@ jobs:
             -e LINEAR_TOKEN \
             ghcr.io/dpeuscher/claude-code-agent:latest
 
-  approve-pr-forgejo:
-    if: ${{ !startsWith(github.server_url, 'https://github.com') && ((github.event.action == 'labeled' && github.event.label.name == 'ai:step-11:approve-if-ok') || github.event_name == 'workflow_dispatch') }}
+  ticket-story-ready-forgejo:
+    if: ${{ !startsWith(github.server_url, 'https://github.com') && ((github.event.action == 'labeled' && github.event.label.name == 'ai:step-07:ticket-story-ready') || github.event_name == 'workflow_dispatch') }}
     runs-on: docker
     steps:
       - uses: actions/checkout@v4
@@ -67,15 +80,17 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_TOKEN }}
-      - name: Claude – approve PR if OK (Forgejo)
+      - name: Claude – ticket story ready (Forgejo)
         env:
           CI_PROVIDER: forgejo
+          TICKET_PROVIDER: ${{ github.event.inputs.ticket_provider || 'forgejo' }}
           FORGEJO_TOKEN: ${{ secrets.FORGEJO_TOKEN }}
           FORGEJO_BASE_URL: ${{ secrets.FORGEJO_BASE_URL }}
           REPO_URL: ${{ github.server_url }}/${{ github.repository }}
-          MODE: approve_if_ok
-          PR_NUMBER: ${{ github.event.pull_request.number || github.event.check_suite.pull_requests[0].number || github.event.inputs.pr_number }}
+          MODE: ticket_story_ready
+          ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
           CLAUDE_CREDENTIALS_B64: ${{ secrets.CLAUDE_CREDENTIALS_B64 }}
+          ONLY_AUTOMATE_OWN_ISSUES: 1
           # Provider-specific credentials
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           JIRA_TOKEN: ${{ secrets.JIRA_TOKEN }}
@@ -84,12 +99,14 @@ jobs:
         run: |
           docker run --rm \
             -e CI_PROVIDER \
+            -e TICKET_PROVIDER \
             -e FORGEJO_TOKEN \
             -e FORGEJO_BASE_URL \
             -e REPO_URL \
             -e MODE \
-            -e PR_NUMBER \
+            -e ISSUE_NUMBER \
             -e CLAUDE_CREDENTIALS_B64 \
+            -e ONLY_AUTOMATE_OWN_ISSUES \
             -e GH_TOKEN \
             -e JIRA_TOKEN \
             -e JIRA_BASE_URL \
