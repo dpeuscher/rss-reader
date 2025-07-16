@@ -19,13 +19,29 @@ class FeedCacheService
 
     public function getCachedFeed(string $url, int $cacheDuration): ?array
     {
+        if (!$this->validateCacheDuration($cacheDuration)) {
+            throw new \InvalidArgumentException('Cache duration must be between 60 seconds and 1 week (604800 seconds)');
+        }
+        
         try {
             $cacheKey = $this->generateCacheKey($url, $cacheDuration);
             $cacheItem = $this->cache->getItem($cacheKey);
 
             if ($cacheItem->isHit()) {
-                $this->logger->debug('Cache hit for feed', ['url' => $url, 'cache_key' => $cacheKey]);
-                return $cacheItem->get();
+                $cachedData = $cacheItem->get();
+                
+                // Validate cached data structure consistency
+                if (is_array($cachedData) && isset($cachedData['content'], $cachedData['cached_at'], $cachedData['url'])) {
+                    $this->logger->debug('Cache hit for feed', ['url' => $url, 'cache_key' => $cacheKey]);
+                    return $cachedData;
+                } else {
+                    $this->logger->warning('Invalid cached data structure, invalidating cache', [
+                        'url' => $url,
+                        'cache_key' => $cacheKey
+                    ]);
+                    $this->cache->deleteItem($cacheKey);
+                    return null;
+                }
             }
 
             $this->logger->debug('Cache miss for feed', ['url' => $url, 'cache_key' => $cacheKey]);
@@ -41,6 +57,10 @@ class FeedCacheService
 
     public function cacheFeed(string $url, int $cacheDuration, array $feedData): bool
     {
+        if (!$this->validateCacheDuration($cacheDuration)) {
+            throw new \InvalidArgumentException('Cache duration must be between 60 seconds and 1 week (604800 seconds)');
+        }
+        
         try {
             $cacheKey = $this->generateCacheKey($url, $cacheDuration);
             $cacheItem = $this->cache->getItem($cacheKey);
@@ -75,6 +95,10 @@ class FeedCacheService
 
     public function invalidateFeed(string $url, int $cacheDuration): bool
     {
+        if (!$this->validateCacheDuration($cacheDuration)) {
+            throw new \InvalidArgumentException('Cache duration must be between 60 seconds and 1 week (604800 seconds)');
+        }
+        
         try {
             $cacheKey = $this->generateCacheKey($url, $cacheDuration);
             $success = $this->cache->deleteItem($cacheKey);
@@ -101,7 +125,11 @@ class FeedCacheService
         try {
             // Clear all cache entries for a specific URL regardless of duration
             $urlHash = md5($url);
-            $success = $this->cache->deleteItems($this->cache->getItem("feed_content_{$urlHash}_*"));
+            
+            // Since filesystem cache doesn't support wildcard deletion,
+            // we'll use clear() to remove all cache entries
+            // This is a more robust approach for filesystem cache adapter
+            $success = $this->cache->clear();
             
             $this->logger->debug('All feed cache invalidated for URL', ['url' => $url]);
             return $success;
@@ -118,5 +146,11 @@ class FeedCacheService
     {
         $urlHash = md5($url);
         return "feed_content_{$urlHash}_{$cacheDuration}";
+    }
+    
+    private function validateCacheDuration(int $cacheDuration): bool
+    {
+        // Minimum 60 seconds, maximum 1 week (604800 seconds)
+        return $cacheDuration >= 60 && $cacheDuration <= 604800;
     }
 }
