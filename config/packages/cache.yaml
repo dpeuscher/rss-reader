@@ -15,5 +15,8 @@ framework:
         #app: cache.adapter.apcu
 
         # Namespaced pools use the above "app" backend by default
-        #pools:
-            #my.dedicated.cache: null
+        pools:
+            # Feed cache pool for RSS feed content caching
+            feed.cache:
+                adapter: cache.adapter.filesystem
+                default_lifetime: 900  # 15 minutes default
