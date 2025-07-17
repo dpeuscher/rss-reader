@@ -9,14 +9,22 @@ use Laminas\Feed\Reader\Entry\EntryInterface;
 use Laminas\Feed\Reader\FeedInterface;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
+use Psr\Log\LoggerInterface;
 
 class FeedParserService
 {
     private HttpClientInterface $httpClient;
+    private FeedCacheService $feedCacheService;
+    private LoggerInterface $logger;
 
-    public function __construct(HttpClientInterface $httpClient = null)
-    {
+    public function __construct(
+        HttpClientInterface $httpClient = null,
+        FeedCacheService $feedCacheService = null,
+        LoggerInterface $logger = null
+    ) {
         $this->httpClient = $httpClient ?: HttpClient::create();
+        $this->feedCacheService = $feedCacheService;
+        $this->logger = $logger;
     }
 
     public function validateFeed(string $url): FeedValidationResult
@@ -42,8 +50,19 @@ class FeedParserService
         }
     }
 
-    public function parseFeed(string $url): ParsedFeed
+    public function parseFeed(string $url, int $cacheDuration = 900): ParsedFeed
     {
+        // Try to get from cache first if caching is enabled
+        if ($this->feedCacheService && $cacheDuration > 0) {
+            $cachedData = $this->feedCacheService->getCachedFeed($url, $cacheDuration);
+            if ($cachedData !== null) {
+                $this->logger?->debug('Serving feed from cache', ['url' => $url]);
+                return new ParsedFeed(Reader::importString($cachedData['content']));
+            }
+        }
+
+        // Fetch from external source
+        $this->logger?->debug('Fetching feed from external source', ['url' => $url]);
         $response = $this->httpClient->request('GET', $url, [
             'timeout' => 10,
             'headers' => [
@@ -53,6 +72,16 @@ class FeedParserService
 
         $content = $response->getContent();
         $feed = Reader::importString($content);
+
+        // Cache the result if caching is enabled
+        if ($this->feedCacheService && $cacheDuration > 0) {
+            $cacheData = [
+                'content' => $content,
+                'cached_at' => time(),
+                'url' => $url
+            ];
+            $this->feedCacheService->cacheFeed($url, $cacheDuration, $cacheData);
+        }
 
         return new ParsedFeed($feed);
     }

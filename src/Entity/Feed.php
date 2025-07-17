@@ -36,6 +36,9 @@ class Feed
     #[ORM\Column(type: 'integer', options: ['default' => 60])]
     private int $refreshInterval = 60;
 
+    #[ORM\Column(type: 'integer', options: ['default' => 900])]
+    private int $cacheDuration = 900;
+
     #[ORM\OneToMany(mappedBy: 'feed', targetEntity: Article::class, orphanRemoval: true)]
     private Collection $articles;
 
@@ -128,6 +131,17 @@ class Feed
     public function setRefreshInterval(int $refreshInterval): static
     {
         $this->refreshInterval = $refreshInterval;
+        return $this;
+    }
+
+    public function getCacheDuration(): int
+    {
+        return $this->cacheDuration;
+    }
+
+    public function setCacheDuration(int $cacheDuration): static
+    {
+        $this->cacheDuration = $cacheDuration;
         return $this;
     }
 
