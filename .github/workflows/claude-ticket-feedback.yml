@@ -1,3 +1,4 @@
+
 name: Claude – Ticket Feedback
 
 on:
@@ -26,7 +27,7 @@ concurrency:
 
 jobs:
   ticket-feedback-github:
-    if: ${{ startsWith(github.server_url, 'https://github.com') &&  !contains(github.event.issue.labels.*.name, 'auto:inline') && ((github.event.action == 'labeled' && github.event.label.name == 'ai:step-02:ticket-feedback') || github.event_name == 'workflow_dispatch') }}
+    if: ${{ startsWith(github.server_url, 'https://github.com') && !contains(github.event.issue.labels.*.name, 'auto:inline') && ((github.event.action == 'labeled' && github.event.label.name == 'ai:step-02:ticket-feedback') || github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -70,7 +71,7 @@ jobs:
             ghcr.io/dpeuscher/claude-code-agent:latest
 
   ticket-feedback-forgejo:
-    if: ${{ !startsWith(github.server_url, 'https://github.com') && ((github.event.action == 'labeled' && github.event.label.name == 'ai:step-02:ticket-feedback') || github.event_name == 'workflow_dispatch') }}
+    if: ${{ !startsWith(github.server_url, 'https://github.com') && !contains(github.event.issue.labels.*.name, 'auto:inline') && ((github.event.action == 'labeled' && github.event.label.name == 'ai:step-02:ticket-feedback') || github.event_name == 'workflow_dispatch') }}
     runs-on: docker
     steps:
       - uses: actions/checkout@v4
