@@ -29,7 +29,7 @@ concurrency:
 
 jobs:
   review-pr-github:
-    if: ${{ startsWith(github.server_url, 'https://github.com') && ((github.event.action == 'labeled' && github.event.label.name == 'ai:step-09:pr-review') || github.event_name == 'workflow_dispatch') }}
+    if: ${{ startsWith(github.server_url, 'https://github.com') &&  !contains(github.event.issue.labels.*.name, 'auto:inline') && ((github.event.action == 'labeled' && github.event.label.name == 'ai:step-09:pr-review') || github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
