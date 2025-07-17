@@ -28,7 +28,7 @@ concurrency:
 jobs:
   investigate-issue-github:
     # Investigate issue on GitHub when correct label present
-    if: ${{ startsWith(github.server_url, 'https://github.com') && (contains(github.event.label.name, 'ai:step-04:ticket-technical-investigation') || github.event_name == 'workflow_dispatch') }}
+    if: ${{ startsWith(github.server_url, 'https://github.com') &&  !contains(github.event.issue.labels.*.name, 'auto:inline') && (contains(github.event.label.name, 'ai:step-04:ticket-technical-investigation') || github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
