@@ -15,7 +15,7 @@ concurrency:
 jobs:
   auto-progress:
     if: >-
-      ${{ github.event_name == 'workflow_dispatch' || (github.event.label && startsWith(github.event.label.name, 'state:')) || (github.event_name == 'pull_request' && github.event.action == 'opened') }}
+      ${{ !contains(github.event.issue.labels.*.name, 'auto:inline') && (github.event_name == 'workflow_dispatch' || (github.event.label && startsWith(github.event.label.name, 'state:')) || (github.event_name == 'pull_request' && github.event.action == 'opened')) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
