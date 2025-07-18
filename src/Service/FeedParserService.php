@@ -16,10 +16,12 @@ class FeedParserService
 {
     private HttpClientInterface $httpClient;
     private static ?HTMLPurifier $purifier = null;
+    private string $cacheDir;
 
-    public function __construct(HttpClientInterface $httpClient = null)
+    public function __construct(HttpClientInterface $httpClient = null, string $cacheDir = null)
     {
         $this->httpClient = $httpClient ?: HttpClient::create();
+        $this->cacheDir = $cacheDir ?: ($_ENV['HTMLPURIFIER_CACHE_DIR'] ?? sys_get_temp_dir() . '/htmlpurifier');
     }
 
     public function validateFeed(string $url): FeedValidationResult
@@ -110,7 +112,7 @@ class FeedParserService
             
             // Performance optimization settings
             $config->set('Core.CollectErrors', false);
-            $config->set('Cache.SerializerPath', '/tmp/htmlpurifier');
+            $config->set('Cache.SerializerPath', $this->cacheDir);
             
             // Additional security settings
             $config->set('HTML.Nofollow', true);
@@ -127,12 +129,24 @@ class FeedParserService
             return '';
         }
         
-        $sanitized = self::$purifier->purify($content);
-        
-        // Additional security check for malformed content that might slip through
-        $sanitized = preg_replace('/(?:alert|confirm|prompt|eval|console\.log)\s*\(/i', '', $sanitized);
-        
-        return $sanitized;
+        try {
+            $sanitized = self::$purifier->purify($content);
+            
+            // Additional security check for malformed content that might slip through
+            $sanitized = preg_replace('/(?:alert|confirm|prompt|eval|console\.log)\s*\(/i', '', $sanitized);
+            
+            return $sanitized;
+        } catch (\Exception $e) {
+            // Log purification failures for security monitoring
+            error_log(sprintf(
+                'HTMLPurifier failed to sanitize content: %s. Original content length: %d',
+                $e->getMessage(),
+                strlen($content)
+            ));
+            
+            // Return empty string as fallback for security
+            return '';
+        }
     }
 
     public function updateFeedFromParsed(Feed $feed, ParsedFeed $parsedFeed): Feed
