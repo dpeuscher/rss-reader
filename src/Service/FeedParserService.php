@@ -109,18 +109,18 @@ class FeedParserService
         $allowedTags = '<p><br><strong><em><b><i><ul><ol><li><h1><h2><h3><h4><h5><h6><blockquote><code><pre>';
         $content = strip_tags($content, $allowedTags);
         
-        // Remove all event handlers (onclick, onload, etc.)
-        $content = preg_replace('/\s*on\w+\s*=\s*["\'][^"\']*["\']?/i', '', $content);
+        // Remove all event handlers (onclick, onload, etc.) - handle spaces and newlines
+        $content = preg_replace('/\s*on\s*\w+\s*=\s*["\'][^"\']*["\']?/is', '', $content);
         
-        // Remove dangerous URL schemes
-        $content = preg_replace('/\s*(javascript|vbscript|data|file|ftp):/i', '', $content);
+        // Remove dangerous URL schemes - handle spaces and newlines
+        $content = preg_replace('/\s*(javascript|vbscript|data|file|ftp)\s*:/is', '', $content);
         
         // Remove CSS expressions and imports
         $content = preg_replace('/expression\s*\(/i', '', $content);
         $content = preg_replace('/@import/i', '', $content);
         
-        // Remove style attributes that could contain malicious CSS
-        $content = preg_replace('/\s*style\s*=\s*["\'][^"\']*["\']?/i', '', $content);
+        // Remove style attributes that could contain malicious CSS - handle spaces
+        $content = preg_replace('/\s*style\s*=\s*["\'][^"\']*["\']?/is', '', $content);
         
         // Remove any remaining script tags and their content
         $content = preg_replace('/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/mi', '', $content);
@@ -134,8 +134,6 @@ class FeedParserService
         // Remove meta tags
         $content = preg_replace('/<meta\b[^>]*>/i', '', $content);
         
-        // Decode and re-encode to prevent double encoding attacks
-        $content = html_entity_decode($content, ENT_QUOTES | ENT_HTML5, 'UTF-8');
         
         return trim($content);
     }
@@ -148,9 +146,9 @@ class FeedParserService
         $title = $laminasFeed->getTitle() ?: '';
         $feed->setTitle(strip_tags($title));
         
-        // Sanitize description using our enhanced sanitization
+        // Sanitize description (remove HTML tags but preserve text content)
         $description = $laminasFeed->getDescription() ?: '';
-        $feed->setDescription($this->normalizeContent($description));
+        $feed->setDescription(strip_tags($description));
         
         // Validate and sanitize URL
         $siteUrl = $laminasFeed->getLink() ?: '';

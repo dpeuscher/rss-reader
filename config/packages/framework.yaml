@@ -20,7 +20,7 @@ framework:
         'X-Content-Type-Options': 'nosniff'
         'X-Frame-Options': 'DENY'
         'X-XSS-Protection': '1; mode=block'
-        'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self'; frame-src 'none'; object-src 'none';"
+        'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; font-src 'self'; connect-src 'self'; frame-src 'none'; object-src 'none';"
 
     #esi: true
     #fragments: true
