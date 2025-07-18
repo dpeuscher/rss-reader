@@ -88,16 +88,53 @@ class FeedParserService
         return $article;
     }
 
+    private static $purifier = null;
+    
     public function normalizeContent(string $content): string
     {
-        // Remove potentially harmful tags and attributes
-        $content = strip_tags($content, '<p><br><strong><em><ul><ol><li><h1><h2><h3><h4><h5><h6><a><img>');
+        if (self::$purifier === null) {
+            $config = \HTMLPurifier_Config::createDefault();
+            
+            // Whitelist approved elements and attributes according to security requirements
+            $config->set('HTML.Allowed', implode(',', [
+                'p', 'br', 'strong', 'em', 'b', 'i', 'u',
+                'a[href|title]', 'img[src|alt|title|width|height]',
+                'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+                'blockquote', 'pre', 'code'
+            ]));
+            
+            // Restrict to safe URL schemes only (http/https)
+            $config->set('URI.AllowedSchemes', ['http' => true, 'https' => true]);
+            
+            // Explicitly forbid dangerous elements and scripts
+            $config->set('HTML.ForbiddenElements', ['script', 'style', 'object', 'embed', 'iframe', 'form', 'input', 'textarea', 'select', 'button', 'svg', 'math', 'canvas', 'audio', 'video', 'source', 'track']);
+            $config->set('HTML.ForbiddenAttributes', ['on*', 'style', 'javascript:*', 'vbscript:*', 'data:*']);
+            
+            // Enhanced security settings
+            $config->set('HTML.SafeObject', false);
+            $config->set('HTML.SafeEmbed', false);
+            $config->set('HTML.SafeIframe', false);
+            $config->set('CSS.AllowedProperties', []);
+            $config->set('URI.DisableExternalResources', false);
+            $config->set('URI.DisableResources', false);
+            
+            // Performance optimization
+            $config->set('Core.CollectErrors', false);
+            $config->set('Cache.SerializerPath', sys_get_temp_dir() . '/htmlpurifier');
+            
+            self::$purifier = new \HTMLPurifier($config);
+        }
         
-        // Remove javascript and other dangerous attributes
-        $content = preg_replace('/on\w+="[^"]*"/i', '', $content);
-        $content = preg_replace('/javascript:/i', '', $content);
+        // Sanitize content using HTMLPurifier
+        $sanitized = self::$purifier->purify($content);
         
-        return trim($content);
+        // Additional security check: remove any remaining dangerous patterns
+        $sanitized = preg_replace('/alert\s*\(/i', '', $sanitized);
+        $sanitized = preg_replace('/javascript\s*:/i', '', $sanitized);
+        $sanitized = preg_replace('/vbscript\s*:/i', '', $sanitized);
+        $sanitized = preg_replace('/on\w+\s*=/i', '', $sanitized);
+        
+        return $sanitized;
     }
 
     public function updateFeedFromParsed(Feed $feed, ParsedFeed $parsedFeed): Feed
