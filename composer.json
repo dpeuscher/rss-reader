@@ -10,6 +10,7 @@
         "doctrine/doctrine-bundle": "^2.15",
         "doctrine/doctrine-migrations-bundle": "^3.4",
         "doctrine/orm": "^3.5",
+        "ezyang/htmlpurifier": "^4.17",
         "laminas/laminas-feed": "^2.24",
         "symfony/console": "7.1.*",
         "symfony/dotenv": "7.1.*",
@@ -75,6 +76,7 @@
         }
     },
     "require-dev": {
+        "phpunit/phpunit": "^11.0",
         "symfony/maker-bundle": "^1.64",
         "symfony/security-bundle": "7.1.*"
     }
