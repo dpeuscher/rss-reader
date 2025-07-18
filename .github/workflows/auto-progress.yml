@@ -11,11 +11,16 @@ concurrency:
   group: auto-progress-${{ github.event.issue.number || github.event.pull_request.number }}-${{ github.event.label.name || '' }}
   cancel-in-progress: false
 
-
 jobs:
   auto-progress:
     if: >-
-      ${{ !contains(github.event.issue.labels.*.name, 'auto:inline') && (github.event_name == 'workflow_dispatch' || (github.event.label && startsWith(github.event.label.name, 'state:')) || (github.event_name == 'pull_request' && github.event.action == 'opened')) }}
+      ${{
+        !contains(github.event.issue.labels.*.name, 'auto:inline') &&
+        (!github.event.pull_request || !contains(github.event.pull_request.labels.*.name, 'auto:inline')) &&
+        (github.event_name == 'workflow_dispatch' ||
+         (github.event.label && startsWith(github.event.label.name, 'state:')) ||
+         (github.event_name == 'pull_request' && github.event.action == 'opened'))
+      }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
