@@ -15,6 +15,13 @@ framework:
     # Enable CSRF protection
     csrf_protection: true
 
+    # Security headers including Content Security Policy
+    response_headers:
+        'X-Content-Type-Options': 'nosniff'
+        'X-Frame-Options': 'DENY'
+        'X-XSS-Protection': '1; mode=block'
+        'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self'; frame-src 'none'; object-src 'none';"
+
     #esi: true
     #fragments: true
     php_errors:
