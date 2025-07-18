@@ -4,19 +4,30 @@ namespace App\Service;
 
 use App\Entity\Article;
 use App\Entity\Feed;
+use App\Entity\User;
+use App\Message\ProcessArticleAiMessage;
+use App\Service\AiSummaryService;
 use Laminas\Feed\Reader\Reader;
 use Laminas\Feed\Reader\Entry\EntryInterface;
 use Laminas\Feed\Reader\FeedInterface;
 use Symfony\Component\HttpClient\HttpClient;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class FeedParserService
 {
     private HttpClientInterface $httpClient;
+    private MessageBusInterface $messageBus;
+    private AiSummaryService $aiSummaryService;
 
-    public function __construct(HttpClientInterface $httpClient = null)
-    {
+    public function __construct(
+        HttpClientInterface $httpClient = null,
+        MessageBusInterface $messageBus = null,
+        AiSummaryService $aiSummaryService = null
+    ) {
         $this->httpClient = $httpClient ?: HttpClient::create();
+        $this->messageBus = $messageBus;
+        $this->aiSummaryService = $aiSummaryService;
     }
 
     public function validateFeed(string $url): FeedValidationResult
@@ -57,19 +68,19 @@ class FeedParserService
         return new ParsedFeed($feed);
     }
 
-    public function extractArticles(ParsedFeed $parsedFeed): array
+    public function extractArticles(ParsedFeed $parsedFeed, User $user = null): array
     {
         $articles = [];
         $feed = $parsedFeed->getFeed();
 
         foreach ($feed as $entry) {
-            $articles[] = $this->createArticleFromEntry($entry);
+            $articles[] = $this->createArticleFromEntry($entry, $user);
         }
 
         return $articles;
     }
 
-    private function createArticleFromEntry(EntryInterface $entry): Article
+    private function createArticleFromEntry(EntryInterface $entry, User $user = null): Article
     {
         $article = new Article();
         
@@ -83,6 +94,15 @@ class FeedParserService
         
         if ($entry->getDescription()) {
             $article->setSummary($this->normalizeContent($entry->getDescription()));
+        }
+
+        // Schedule AI processing if user has consent and services are available
+        if ($user && $this->aiSummaryService && $this->messageBus) {
+            if ($this->aiSummaryService->hasUserConsent($user)) {
+                $article->setAiProcessingStatus('pending');
+                // Note: The actual message dispatch will happen after the article is persisted
+                // This is handled by the controller/service that calls this method
+            }
         }
 
         return $article;
@@ -110,6 +130,18 @@ class FeedParserService
         $feed->setLastUpdated(new \DateTime());
         
         return $feed;
+    }
+
+    public function scheduleAiProcessing(Article $article, User $user = null): void
+    {
+        if (!$this->messageBus || !$article->getId()) {
+            return;
+        }
+
+        if ($article->getAiProcessingStatus() === 'pending') {
+            $message = new ProcessArticleAiMessage($article->getId(), $user?->getId());
+            $this->messageBus->dispatch($message);
+        }
     }
 }
 

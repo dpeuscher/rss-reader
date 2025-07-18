@@ -40,9 +40,19 @@ class Article
     #[ORM\OneToMany(mappedBy: 'article', targetEntity: UserArticle::class, orphanRemoval: true)]
     private Collection $userArticles;
 
+    #[ORM\OneToMany(mappedBy: 'article', targetEntity: AiArticleSummary::class, orphanRemoval: true)]
+    private Collection $aiSummaries;
+
+    #[ORM\Column(length: 20, options: ['default' => 'pending'])]
+    private string $aiProcessingStatus = 'pending';
+
+    #[ORM\Column(type: 'integer', nullable: true)]
+    private ?int $estimatedReadingTime = null;
+
     public function __construct()
     {
         $this->userArticles = new ArrayCollection();
+        $this->aiSummaries = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -149,5 +159,60 @@ class Article
             }
         }
         return $this;
+    }
+
+    public function getAiSummaries(): Collection
+    {
+        return $this->aiSummaries;
+    }
+
+    public function addAiSummary(AiArticleSummary $aiSummary): static
+    {
+        if (!$this->aiSummaries->contains($aiSummary)) {
+            $this->aiSummaries->add($aiSummary);
+            $aiSummary->setArticle($this);
+        }
+        return $this;
+    }
+
+    public function removeAiSummary(AiArticleSummary $aiSummary): static
+    {
+        if ($this->aiSummaries->removeElement($aiSummary)) {
+            if ($aiSummary->getArticle() === $this) {
+                $aiSummary->setArticle(null);
+            }
+        }
+        return $this;
+    }
+
+    public function getAiProcessingStatus(): string
+    {
+        return $this->aiProcessingStatus;
+    }
+
+    public function setAiProcessingStatus(string $aiProcessingStatus): static
+    {
+        $this->aiProcessingStatus = $aiProcessingStatus;
+        return $this;
+    }
+
+    public function getEstimatedReadingTime(): ?int
+    {
+        return $this->estimatedReadingTime;
+    }
+
+    public function setEstimatedReadingTime(?int $estimatedReadingTime): static
+    {
+        $this->estimatedReadingTime = $estimatedReadingTime;
+        return $this;
+    }
+
+    public function getLatestAiSummary(): ?AiArticleSummary
+    {
+        if ($this->aiSummaries->isEmpty()) {
+            return null;
+        }
+        
+        return $this->aiSummaries->last();
     }
 }

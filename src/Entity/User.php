@@ -43,6 +43,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(mappedBy: 'user', targetEntity: Category::class, orphanRemoval: true)]
     private Collection $categories;
 
+    #[ORM\OneToOne(mappedBy: 'user', cascade: ['persist', 'remove'])]
+    private ?UserAiPreference $aiPreference = null;
+
     public function __construct()
     {
         $this->subscriptions = new ArrayCollection();
@@ -190,5 +193,31 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             }
         }
         return $this;
+    }
+
+    public function getAiPreference(): ?UserAiPreference
+    {
+        return $this->aiPreference;
+    }
+
+    public function setAiPreference(?UserAiPreference $aiPreference): static
+    {
+        if ($aiPreference === null && $this->aiPreference !== null) {
+            $this->aiPreference->setUser(null);
+        }
+
+        if ($aiPreference !== null && $aiPreference->getUser() !== $this) {
+            $aiPreference->setUser($this);
+        }
+
+        $this->aiPreference = $aiPreference;
+        return $this;
+    }
+
+    public function hasAiConsent(): bool
+    {
+        return $this->aiPreference !== null 
+            && $this->aiPreference->isAiProcessingEnabled()
+            && $this->aiPreference->getConsentGivenAt() !== null;
     }
 }
