@@ -46,6 +46,7 @@ jobs:
           MODE: review
           PR_NUMBER: ${{ github.event.pull_request.number || github.event.inputs.pr_number }}
           CLAUDE_CREDENTIALS_B64: ${{ secrets.CLAUDE_CREDENTIALS_B64 }}
+          FALLBACK_CLAUDE_API_KEY: ${{ secrets.FALLBACK_CLAUDE_API_KEY }}
           # Provider-specific credentials
           FORGEJO_TOKEN: ${{ secrets.FORGEJO_TOKEN }}
           FORGEJO_BASE_URL: ${{ secrets.FORGEJO_BASE_URL }}
@@ -61,6 +62,7 @@ jobs:
             -e MODE \
             -e PR_NUMBER \
             -e CLAUDE_CREDENTIALS_B64 \
+            -e FALLBACK_CLAUDE_API_KEY \
             -e FORGEJO_TOKEN \
             -e FORGEJO_BASE_URL \
             -e JIRA_TOKEN \
@@ -89,6 +91,7 @@ jobs:
           MODE: review
           PR_NUMBER: ${{ github.event.pull_request.number || github.event.inputs.pr_number }}
           CLAUDE_CREDENTIALS_B64: ${{ secrets.CLAUDE_CREDENTIALS_B64 }}
+          FALLBACK_CLAUDE_API_KEY: ${{ secrets.FALLBACK_CLAUDE_API_KEY }}
           # Provider-specific credentials
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           JIRA_TOKEN: ${{ secrets.JIRA_TOKEN }}
@@ -104,6 +107,7 @@ jobs:
             -e MODE \
             -e PR_NUMBER \
             -e CLAUDE_CREDENTIALS_B64 \
+            -e FALLBACK_CLAUDE_API_KEY \
             -e GH_TOKEN \
             -e JIRA_TOKEN \
             -e JIRA_BASE_URL \

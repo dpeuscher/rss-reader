@@ -52,6 +52,7 @@ jobs:
           ISSUE_NUMBER: ${{ github.event.issue.number || github.event.inputs.issue_number }}
           COMMENT_URL: ${{ github.event.comment.html_url }}
           CLAUDE_CREDENTIALS_B64: ${{ secrets.CLAUDE_CREDENTIALS_B64 }}
+          FALLBACK_CLAUDE_API_KEY: ${{ secrets.FALLBACK_CLAUDE_API_KEY }}
           ONLY_AUTOMATE_OWN_ISSUES: 1
           # Provider-specific credentials
           FORGEJO_TOKEN: ${{ secrets.FORGEJO_TOKEN }}
@@ -70,6 +71,7 @@ jobs:
             -e ISSUE_NUMBER \
             -e COMMENT_URL \
             -e CLAUDE_CREDENTIALS_B64 \
+            -e FALLBACK_CLAUDE_API_KEY \
             -e ONLY_AUTOMATE_OWN_ISSUES \
             -e FORGEJO_TOKEN \
             -e FORGEJO_BASE_URL \
@@ -101,6 +103,7 @@ jobs:
           ISSUE_NUMBER: ${{ github.event.issue.number || github.event.inputs.issue_number }}
           COMMENT_URL: ${{ github.event.comment.html_url }}
           CLAUDE_CREDENTIALS_B64: ${{ secrets.CLAUDE_CREDENTIALS_B64 }}
+          FALLBACK_CLAUDE_API_KEY: ${{ secrets.FALLBACK_CLAUDE_API_KEY }}
           ONLY_AUTOMATE_OWN_ISSUES: 1
           # Provider-specific credentials
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
@@ -119,6 +122,7 @@ jobs:
             -e ISSUE_NUMBER \
             -e COMMENT_URL \
             -e CLAUDE_CREDENTIALS_B64 \
+            -e FALLBACK_CLAUDE_API_KEY \
             -e ONLY_AUTOMATE_OWN_ISSUES \
             -e GH_TOKEN \
             -e JIRA_TOKEN \
