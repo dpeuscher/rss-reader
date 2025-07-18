@@ -9,10 +9,13 @@ use Laminas\Feed\Reader\Entry\EntryInterface;
 use Laminas\Feed\Reader\FeedInterface;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
+use HTMLPurifier;
+use HTMLPurifier_Config;
 
 class FeedParserService
 {
     private HttpClientInterface $httpClient;
+    private static ?HTMLPurifier $purifier = null;
 
     public function __construct(HttpClientInterface $httpClient = null)
     {
@@ -90,14 +93,43 @@ class FeedParserService
 
     public function normalizeContent(string $content): string
     {
-        // Remove potentially harmful tags and attributes
-        $content = strip_tags($content, '<p><br><strong><em><ul><ol><li><h1><h2><h3><h4><h5><h6><a><img>');
+        // Handle empty or null content gracefully
+        if (empty($content)) {
+            return '';
+        }
+
+        // Initialize HTMLPurifier singleton for performance optimization
+        if (self::$purifier === null) {
+            $config = HTMLPurifier_Config::createDefault();
+            
+            // Whitelist approved elements and attributes per security requirements
+            $allowedElements = [
+                'p', 'br', 'strong', 'em', 'b', 'i', 'u',
+                'a[href|title]', 'img[src|alt|title|width|height]',
+                'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+                'blockquote', 'pre', 'code'
+            ];
+            $config->set('HTML.Allowed', implode(',', $allowedElements));
+            
+            // Restrict to safe URL schemes (http/https only)
+            $config->set('URI.AllowedSchemes', ['http' => true, 'https' => true]);
+            
+            // Performance optimizations
+            $config->set('Core.CollectErrors', false);
+            $config->set('HTML.TidyLevel', 'none');
+            
+            // Create cache directory if it doesn't exist
+            $cacheDir = sys_get_temp_dir() . '/htmlpurifier';
+            if (!is_dir($cacheDir)) {
+                mkdir($cacheDir, 0755, true);
+            }
+            $config->set('Cache.SerializerPath', $cacheDir);
+            
+            self::$purifier = new HTMLPurifier($config);
+        }
         
-        // Remove javascript and other dangerous attributes
-        $content = preg_replace('/on\w+="[^"]*"/i', '', $content);
-        $content = preg_replace('/javascript:/i', '', $content);
-        
-        return trim($content);
+        // Sanitize content using HTMLPurifier
+        return self::$purifier->purify($content);
     }
 
     public function updateFeedFromParsed(Feed $feed, ParsedFeed $parsedFeed): Feed
