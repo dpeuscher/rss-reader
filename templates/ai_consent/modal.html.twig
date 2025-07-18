@@ -1,0 +1,140 @@
+{% if not hasConsent %}
+<div class="modal fade" id="aiConsentModal" tabindex="-1" aria-labelledby="aiConsentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="aiConsentModalLabel">🤖 AI-Powered Article Summarization</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <h6><i class="bi bi-info-circle"></i> What is this feature?</h6>
+                    <p>We can automatically generate concise summaries of your RSS feed articles using artificial intelligence, helping you quickly understand content without reading full articles.</p>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-check-circle text-success"></i> Benefits</h6>
+                        <ul class="list-unstyled">
+                            <li>✓ Save time with 2-3 sentence summaries</li>
+                            <li>✓ Identify key topics and entities</li>
+                            <li>✓ Get reading time estimates</li>
+                            <li>✓ Prioritize important articles</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-shield-check text-primary"></i> Privacy & Security</h6>
+                        <ul class="list-unstyled">
+                            <li>✓ Only article content is processed</li>
+                            <li>✓ No personal data sent to AI service</li>
+                            <li>✓ Consent can be revoked anytime</li>
+                            <li>✓ Data filtering for sensitive content</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning">
+                    <h6><i class="bi bi-exclamation-triangle"></i> Important Information</h6>
+                    <p><strong>Data Processing:</strong> To provide AI summaries, article content will be sent to OpenAI's GPT-4 service for processing. We filter out potentially sensitive information (emails, URLs, phone numbers) before processing.</p>
+                    <p><strong>Consent:</strong> This feature is completely optional. Your consent is required to enable AI processing, and you can disable it at any time in your account settings.</p>
+                    <p><strong>Cost:</strong> This feature is provided at no additional cost to you as part of our service.</p>
+                </div>
+
+                <div class="mb-3">
+                    <label for="summaryLength" class="form-label">Preferred Summary Length</label>
+                    <select class="form-select" id="summaryLength" name="summaryLength">
+                        <option value="short">Short (1-2 sentences)</option>
+                        <option value="medium" selected>Medium (2-3 sentences)</option>
+                        <option value="long">Long (4-5 sentences)</option>
+                    </select>
+                </div>
+
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="consentCheckbox" required>
+                    <label class="form-check-label" for="consentCheckbox">
+                        I understand and consent to having my RSS article content processed by OpenAI's AI service for summarization purposes. I acknowledge that I can revoke this consent at any time.
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Not Now</button>
+                <button type="button" class="btn btn-primary" id="grantConsentBtn" disabled>
+                    <i class="bi bi-robot"></i> Enable AI Summaries
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const consentCheckbox = document.getElementById('consentCheckbox');
+    const grantConsentBtn = document.getElementById('grantConsentBtn');
+    const summaryLength = document.getElementById('summaryLength');
+    
+    // Enable/disable consent button based on checkbox
+    consentCheckbox.addEventListener('change', function() {
+        grantConsentBtn.disabled = !this.checked;
+    });
+    
+    // Handle consent granting
+    grantConsentBtn.addEventListener('click', function() {
+        if (!consentCheckbox.checked) {
+            return;
+        }
+        
+        const preferredLength = summaryLength.value;
+        
+        fetch('/api/ai-consent/grant', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                preferredSummaryLength: preferredLength
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Close modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('aiConsentModal'));
+                modal.hide();
+                
+                // Show success message
+                showNotification('AI summarization enabled successfully!', 'success');
+                
+                // Refresh the page to show AI features
+                window.location.reload();
+            } else {
+                showNotification('Failed to enable AI summarization: ' + data.error, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('An error occurred while enabling AI summarization.', 'error');
+        });
+    });
+});
+
+function showNotification(message, type) {
+    // Create and show a notification (you can customize this based on your notification system)
+    const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert ${alertClass} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    // Add to page (adjust selector based on your layout)
+    const container = document.querySelector('.container-fluid') || document.body;
+    container.insertBefore(alertDiv, container.firstChild);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+</script>
+{% endif %}
