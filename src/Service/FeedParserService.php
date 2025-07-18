@@ -73,14 +73,25 @@ class FeedParserService
     {
         $article = new Article();
         
-        $article->setGuid($entry->getId() ?: $entry->getLink());
-        $article->setTitle($entry->getTitle());
-        $article->setUrl($entry->getLink());
+        // Sanitize GUID
+        $guid = $entry->getId() ?: $entry->getLink();
+        $article->setGuid(strip_tags($guid ?: ''));
+        
+        // Sanitize title (remove HTML tags but preserve text content)
+        $title = $entry->getTitle() ?: '';
+        $article->setTitle(strip_tags($title));
+        
+        // Sanitize URL
+        $url = $entry->getLink() ?: '';
+        $article->setUrl($this->sanitizeUrl($url));
+        
         $article->setPublishedAt($entry->getDateCreated() ?: new \DateTime());
         
+        // Sanitize content
         $content = $entry->getContent() ?: $entry->getDescription();
-        $article->setContent($this->normalizeContent($content));
+        $article->setContent($this->normalizeContent($content ?: ''));
         
+        // Sanitize summary
         if ($entry->getDescription()) {
             $article->setSummary($this->normalizeContent($entry->getDescription()));
         }
@@ -90,12 +101,39 @@ class FeedParserService
 
     public function normalizeContent(string $content): string
     {
-        // Remove potentially harmful tags and attributes
-        $content = strip_tags($content, '<p><br><strong><em><ul><ol><li><h1><h2><h3><h4><h5><h6><a><img>');
+        // First, remove any null bytes and normalize whitespace
+        $content = str_replace("\0", '', $content);
+        $content = preg_replace('/\s+/', ' ', $content);
         
-        // Remove javascript and other dangerous attributes
-        $content = preg_replace('/on\w+="[^"]*"/i', '', $content);
-        $content = preg_replace('/javascript:/i', '', $content);
+        // Only allow safe HTML tags - removed <a> and <img> to prevent URL-based attacks
+        $allowedTags = '<p><br><strong><em><b><i><ul><ol><li><h1><h2><h3><h4><h5><h6><blockquote><code><pre>';
+        $content = strip_tags($content, $allowedTags);
+        
+        // Remove all event handlers (onclick, onload, etc.) - handle spaces and newlines
+        $content = preg_replace('/\s*on\s*\w+\s*=\s*["\'][^"\']*["\']?/is', '', $content);
+        
+        // Remove dangerous URL schemes - handle spaces and newlines
+        $content = preg_replace('/\s*(javascript|vbscript|data|file|ftp)\s*:/is', '', $content);
+        
+        // Remove CSS expressions and imports
+        $content = preg_replace('/expression\s*\(/i', '', $content);
+        $content = preg_replace('/@import/i', '', $content);
+        
+        // Remove style attributes that could contain malicious CSS - handle spaces
+        $content = preg_replace('/\s*style\s*=\s*["\'][^"\']*["\']?/is', '', $content);
+        
+        // Remove any remaining script tags and their content
+        $content = preg_replace('/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/mi', '', $content);
+        
+        // Remove object, embed, applet, iframe tags
+        $content = preg_replace('/<(object|embed|applet|iframe|form)\b[^>]*>.*?<\/\1>/si', '', $content);
+        
+        // Remove link tags (could be used for CSS injection)
+        $content = preg_replace('/<link\b[^>]*>/i', '', $content);
+        
+        // Remove meta tags
+        $content = preg_replace('/<meta\b[^>]*>/i', '', $content);
+        
         
         return trim($content);
     }
@@ -104,12 +142,42 @@ class FeedParserService
     {
         $laminasFeed = $parsedFeed->getFeed();
         
-        $feed->setTitle($laminasFeed->getTitle());
-        $feed->setDescription($laminasFeed->getDescription());
-        $feed->setSiteUrl($laminasFeed->getLink());
+        // Sanitize title (remove HTML tags but preserve text content)
+        $title = $laminasFeed->getTitle() ?: '';
+        $feed->setTitle(strip_tags($title));
+        
+        // Sanitize description (remove HTML tags but preserve text content)
+        $description = $laminasFeed->getDescription() ?: '';
+        $feed->setDescription(strip_tags($description));
+        
+        // Validate and sanitize URL
+        $siteUrl = $laminasFeed->getLink() ?: '';
+        $feed->setSiteUrl($this->sanitizeUrl($siteUrl));
+        
         $feed->setLastUpdated(new \DateTime());
         
         return $feed;
+    }
+
+    private function sanitizeUrl(string $url): string
+    {
+        // Remove any null bytes and trim
+        $url = str_replace("\0", '', trim($url));
+        
+        // Only allow http and https schemes
+        if (!preg_match('/^https?:\/\//i', $url)) {
+            return '';
+        }
+        
+        // Remove dangerous characters that could break HTML
+        $url = preg_replace('/[<>"\'\\\\]/', '', $url);
+        
+        // Basic URL validation
+        if (!filter_var($url, FILTER_VALIDATE_URL)) {
+            return '';
+        }
+        
+        return $url;
     }
 }
 
