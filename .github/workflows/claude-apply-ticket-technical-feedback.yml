@@ -46,6 +46,7 @@ jobs:
           MODE: apply_ticket_technical_feedback
           ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
           CLAUDE_CREDENTIALS_B64: ${{ secrets.CLAUDE_CREDENTIALS_B64 }}
+          FALLBACK_CLAUDE_API_KEY: ${{ secrets.FALLBACK_CLAUDE_API_KEY }}
           ONLY_AUTOMATE_OWN_ISSUES: 1
           # Provider-specific credentials
           FORGEJO_TOKEN: ${{ secrets.FORGEJO_TOKEN }}
@@ -62,6 +63,7 @@ jobs:
             -e MODE \
             -e ISSUE_NUMBER \
             -e CLAUDE_CREDENTIALS_B64 \
+            -e FALLBACK_CLAUDE_API_KEY \
             -e ONLY_AUTOMATE_OWN_ISSUES \
             -e FORGEJO_TOKEN \
             -e FORGEJO_BASE_URL \
@@ -91,6 +93,7 @@ jobs:
           MODE: apply_ticket_technical_feedback
           ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
           CLAUDE_CREDENTIALS_B64: ${{ secrets.CLAUDE_CREDENTIALS_B64 }}
+          FALLBACK_CLAUDE_API_KEY: ${{ secrets.FALLBACK_CLAUDE_API_KEY }}
           ONLY_AUTOMATE_OWN_ISSUES: 1
           # Provider-specific credentials
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
@@ -107,6 +110,7 @@ jobs:
             -e MODE \
             -e ISSUE_NUMBER \
             -e CLAUDE_CREDENTIALS_B64 \
+            -e FALLBACK_CLAUDE_API_KEY \
             -e ONLY_AUTOMATE_OWN_ISSUES \
             -e GH_TOKEN \
             -e JIRA_TOKEN \
