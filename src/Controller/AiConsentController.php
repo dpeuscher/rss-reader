@@ -53,11 +53,24 @@ class AiConsentController extends AbstractController
             return new JsonResponse(['error' => 'User not authenticated'], 401);
         }
 
-        $data = json_decode($request->getContent(), true);
+        $content = $request->getContent();
+        if (empty($content)) {
+            return new JsonResponse(['error' => 'Request body is required'], 400);
+        }
+
+        $data = json_decode($content, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            return new JsonResponse(['error' => 'Invalid JSON format'], 400);
+        }
+
+        if (!is_array($data)) {
+            return new JsonResponse(['error' => 'JSON data must be an object'], 400);
+        }
+
         $summaryLength = $data['preferredSummaryLength'] ?? 'medium';
 
-        if (!in_array($summaryLength, ['short', 'medium', 'long'])) {
-            return new JsonResponse(['error' => 'Invalid summary length'], 400);
+        if (!is_string($summaryLength) || !in_array($summaryLength, ['short', 'medium', 'long'])) {
+            return new JsonResponse(['error' => 'Invalid summary length. Must be: short, medium, or long'], 400);
         }
 
         $preference = $user->getAiPreference();
@@ -111,11 +124,24 @@ class AiConsentController extends AbstractController
             return new JsonResponse(['error' => 'User not authenticated'], 401);
         }
 
-        $data = json_decode($request->getContent(), true);
+        $content = $request->getContent();
+        if (empty($content)) {
+            return new JsonResponse(['error' => 'Request body is required'], 400);
+        }
+
+        $data = json_decode($content, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            return new JsonResponse(['error' => 'Invalid JSON format'], 400);
+        }
+
+        if (!is_array($data)) {
+            return new JsonResponse(['error' => 'JSON data must be an object'], 400);
+        }
+
         $summaryLength = $data['preferredSummaryLength'] ?? null;
 
-        if ($summaryLength && !in_array($summaryLength, ['short', 'medium', 'long'])) {
-            return new JsonResponse(['error' => 'Invalid summary length'], 400);
+        if ($summaryLength !== null && (!is_string($summaryLength) || !in_array($summaryLength, ['short', 'medium', 'long']))) {
+            return new JsonResponse(['error' => 'Invalid summary length. Must be: short, medium, or long'], 400);
         }
 
         $preference = $user->getAiPreference();

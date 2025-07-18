@@ -10,6 +10,7 @@ use App\Repository\UserAiPreferenceRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
+use Symfony\Contracts\Cache\CacheInterface;
 use Psr\Log\LoggerInterface;
 
 class AiSummaryService
@@ -19,12 +20,15 @@ class AiSummaryService
     private const MAX_TOKENS = 2000;
     private const TEMPERATURE = 0.3;
     private const MAX_CONTENT_LENGTH = 10000;
+    private const RATE_LIMIT_CALLS = 60;
+    private const RATE_LIMIT_WINDOW = 60;
 
     private HttpClientInterface $httpClient;
     private EntityManagerInterface $entityManager;
     private AiArticleSummaryRepository $summaryRepository;
     private UserAiPreferenceRepository $preferenceRepository;
     private LoggerInterface $logger;
+    private CacheInterface $cache;
     private string $openaiApiKey;
 
     public function __construct(
@@ -33,6 +37,7 @@ class AiSummaryService
         AiArticleSummaryRepository $summaryRepository,
         UserAiPreferenceRepository $preferenceRepository,
         LoggerInterface $logger,
+        CacheInterface $cache,
         string $openaiApiKey
     ) {
         $this->httpClient = $httpClient;
@@ -40,6 +45,7 @@ class AiSummaryService
         $this->summaryRepository = $summaryRepository;
         $this->preferenceRepository = $preferenceRepository;
         $this->logger = $logger;
+        $this->cache = $cache;
         $this->openaiApiKey = $openaiApiKey;
     }
 
@@ -52,6 +58,7 @@ class AiSummaryService
     {
         $startTime = microtime(true);
         
+        $this->entityManager->beginTransaction();
         try {
             $article->setAiProcessingStatus('processing');
             $this->entityManager->flush();
@@ -62,6 +69,7 @@ class AiSummaryService
             if (empty($content)) {
                 $article->setAiProcessingStatus('failed');
                 $this->entityManager->flush();
+                $this->entityManager->commit();
                 return null;
             }
 
@@ -71,6 +79,7 @@ class AiSummaryService
             if (!$response) {
                 $article->setAiProcessingStatus('failed');
                 $this->entityManager->flush();
+                $this->entityManager->commit();
                 return null;
             }
 
@@ -80,6 +89,7 @@ class AiSummaryService
             
             $this->entityManager->persist($summary);
             $this->entityManager->flush();
+            $this->entityManager->commit();
 
             $this->logger->info('AI summary generated', [
                 'article_id' => $article->getId(),
@@ -90,6 +100,8 @@ class AiSummaryService
             return $summary;
 
         } catch (\Exception $e) {
+            $this->entityManager->rollback();
+            
             $article->setAiProcessingStatus('failed');
             $this->entityManager->flush();
             
@@ -98,7 +110,7 @@ class AiSummaryService
                 'error' => $e->getMessage()
             ]);
             
-            return null;
+            throw $e;
         }
     }
 
@@ -133,14 +145,39 @@ class AiSummaryService
 
     private function filterSensitiveContent(string $content): string
     {
-        // Remove email addresses
-        $content = preg_replace('/\S+@\S+\.\S+/', '[email]', $content);
+        $patterns = [
+            // Email addresses (more comprehensive)
+            '/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/' => '[email]',
+            
+            // URLs (comprehensive)
+            '/https?:\/\/[^\s]+/' => '[url]',
+            '/www\.[^\s]+/' => '[url]',
+            '/[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\/[^\s]*/' => '[url]',
+            
+            // Phone numbers (multiple formats)
+            '/\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/' => '[phone]',
+            '/\(\d{3}\)\s?\d{3}[-.]?\d{4}/' => '[phone]',
+            '/\+\d{1,3}[\s.-]?\d{3,4}[\s.-]?\d{3,4}[\s.-]?\d{3,4}/' => '[phone]',
+            
+            // Credit card numbers
+            '/\b(?:\d{4}[-\s]?){3}\d{4}\b/' => '[card]',
+            
+            // SSN (US format)
+            '/\b\d{3}-\d{2}-\d{4}\b/' => '[ssn]',
+            
+            // Potential API keys, tokens (20+ character alphanumeric strings)
+            '/\b[A-Za-z0-9]{20,}\b/' => '[token]',
+            
+            // IP addresses
+            '/\b(?:\d{1,3}\.){3}\d{1,3}\b/' => '[ip]',
+            
+            // Potential passwords or keys in common formats
+            '/(?:password|pwd|pass|key|secret|token)\s*[:=]\s*[^\s]+/i' => '[credential]',
+        ];
         
-        // Remove URLs
-        $content = preg_replace('/https?:\/\/[^\s]+/', '[url]', $content);
-        
-        // Remove phone numbers (basic pattern)
-        $content = preg_replace('/\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/', '[phone]', $content);
+        foreach ($patterns as $pattern => $replacement) {
+            $content = preg_replace($pattern, $replacement, $content);
+        }
         
         return $content;
     }
@@ -176,8 +213,42 @@ Example response:
         };
     }
 
+    private function checkRateLimit(): bool
+    {
+        $cacheKey = 'ai_api_rate_limit';
+        
+        try {
+            $currentCount = $this->cache->get($cacheKey, function() {
+                return 0;
+            });
+            
+            if ($currentCount >= self::RATE_LIMIT_CALLS) {
+                $this->logger->warning('Rate limit exceeded for OpenAI API calls', [
+                    'current_count' => $currentCount,
+                    'limit' => self::RATE_LIMIT_CALLS
+                ]);
+                return false;
+            }
+            
+            $this->cache->delete($cacheKey);
+            $this->cache->get($cacheKey, function() use ($currentCount) {
+                return $currentCount + 1;
+            }, self::RATE_LIMIT_WINDOW);
+            
+            return true;
+        } catch (\Exception $e) {
+            $this->logger->error('Rate limiting check failed', ['error' => $e->getMessage()]);
+            return true;
+        }
+    }
+
     private function callOpenAiApi(string $prompt): ?array
     {
+        if (!$this->checkRateLimit()) {
+            $this->logger->error('API call blocked by rate limiting');
+            return null;
+        }
+        
         try {
             $response = $this->httpClient->request('POST', self::OPENAI_API_URL, [
                 'headers' => [
