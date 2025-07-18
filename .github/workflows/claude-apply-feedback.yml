@@ -48,7 +48,6 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           REPO_URL: ${{ github.server_url }}/${{ github.repository }}
           MODE: ${{ github.event.pull_request && 'apply_feedback' || 'apply_issue_feedback' }}
-          COMMENT_BODY: ${{ github.event.comment.body || 'Manual feedback application' }}
           PR_NUMBER: ${{ github.event.pull_request.number || github.event.inputs.pr_number }}
           ISSUE_NUMBER: ${{ github.event.issue.number || github.event.inputs.issue_number }}
           COMMENT_URL: ${{ github.event.comment.html_url }}
@@ -67,7 +66,6 @@ jobs:
             -e GH_TOKEN \
             -e REPO_URL \
             -e MODE \
-            -e COMMENT_BODY \
             -e PR_NUMBER \
             -e ISSUE_NUMBER \
             -e COMMENT_URL \
@@ -99,7 +97,6 @@ jobs:
           FORGEJO_BASE_URL: ${{ secrets.FORGEJO_BASE_URL }}
           REPO_URL: ${{ github.server_url }}/${{ github.repository }}
           MODE: ${{ github.event.pull_request && 'apply_feedback' || 'apply_issue_feedback' }}
-          COMMENT_BODY: ${{ github.event.comment.body || 'Manual feedback application' }}
           PR_NUMBER: ${{ github.event.pull_request.number || github.event.inputs.pr_number }}
           ISSUE_NUMBER: ${{ github.event.issue.number || github.event.inputs.issue_number }}
           COMMENT_URL: ${{ github.event.comment.html_url }}
@@ -118,7 +115,6 @@ jobs:
             -e FORGEJO_BASE_URL \
             -e REPO_URL \
             -e MODE \
-            -e COMMENT_BODY \
             -e PR_NUMBER \
             -e ISSUE_NUMBER \
             -e COMMENT_URL \
