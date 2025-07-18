@@ -145,7 +145,7 @@ class FeedParserServiceTest extends TestCase
         // Empty content
         $this->assertSame('', $this->feedParserService->normalizeContent(''));
         
-        // Null content (cast to string)
+        // Empty string content
         $this->assertSame('', $this->feedParserService->normalizeContent(''));
         
         // Very large content should not cause issues

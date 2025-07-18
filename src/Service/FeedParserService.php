@@ -115,7 +115,7 @@ class FeedParserService
             $config->set('HTML.SafeEmbed', false);
             $config->set('HTML.SafeIframe', false);
             $config->set('CSS.AllowedProperties', []);
-            $config->set('URI.DisableExternalResources', false);
+            $config->set('URI.DisableExternalResources', true);
             $config->set('URI.DisableResources', false);
             
             // Performance optimization
@@ -128,11 +128,6 @@ class FeedParserService
         // Sanitize content using HTMLPurifier
         $sanitized = self::$purifier->purify($content);
         
-        // Additional security check: remove any remaining dangerous patterns
-        $sanitized = preg_replace('/alert\s*\(/i', '', $sanitized);
-        $sanitized = preg_replace('/javascript\s*:/i', '', $sanitized);
-        $sanitized = preg_replace('/vbscript\s*:/i', '', $sanitized);
-        $sanitized = preg_replace('/on\w+\s*=/i', '', $sanitized);
         
         return $sanitized;
     }
