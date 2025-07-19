@@ -99,6 +99,20 @@ class UrlValidatorService implements UrlValidatorInterface
     {
         // Check IPv4 private/reserved ranges using PHP's built-in filters
         if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            // Explicitly block critical ranges that built-in filters might miss
+            $criticalRanges = [
+                '0.0.0.0/8',        // "This" Network
+                '169.254.169.254/32', // AWS metadata endpoint
+                '224.0.0.0/4',      // Multicast
+                '255.255.255.255/32' // Broadcast
+            ];
+            
+            foreach ($criticalRanges as $range) {
+                if ($this->isIpInRange($ip, $range)) {
+                    return false;
+                }
+            }
+            
             // Use NO_PRIV_RANGE and NO_RES_RANGE filters to block private and reserved ranges
             return filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== false;
         }
@@ -126,15 +140,20 @@ class UrlValidatorService implements UrlValidatorInterface
             }
         }
         
-        // Validate hostname format and length
-        return preg_match('/^[a-zA-Z0-9.-]+$/', $hostname) && strlen($hostname) <= 253 && strlen($hostname) > 0;
+        // Validate hostname format and length - prevent consecutive dots and leading/trailing dots
+        return preg_match('/^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*$/', $hostname) && strlen($hostname) <= 253 && strlen($hostname) > 0;
     }
     
     private function resolveDnsSafely(string $hostname): array
     {
-        // Use dns_get_record with timeout instead of gethostbyname to prevent DNS poisoning
-        $records = @dns_get_record($hostname, DNS_A | DNS_AAAA);
-        $ips = [];
+        // Set socket timeout before DNS operations to prevent DoS
+        $originalTimeout = ini_get('default_socket_timeout');
+        ini_set('default_socket_timeout', 5);
+        
+        try {
+            // Use dns_get_record with timeout instead of gethostbyname to prevent DNS poisoning
+            $records = @dns_get_record($hostname, DNS_A | DNS_AAAA);
+            $ips = [];
         
         if ($records) {
             foreach ($records as $record) {
@@ -147,11 +166,15 @@ class UrlValidatorService implements UrlValidatorInterface
         }
         
         return $ips;
+        } finally {
+            // Restore original timeout
+            ini_set('default_socket_timeout', $originalTimeout);
+        }
     }
     
     private function isIpInRange(string $ip, string $range): bool
     {
-        // IPv6 range checking implementation
+        // Universal IP range checking implementation for both IPv4 and IPv6
         if (strpos($range, '/') !== false) {
             [$subnet, $mask] = explode('/', $range);
             $ipBin = inet_pton($ip);
@@ -162,7 +185,8 @@ class UrlValidatorService implements UrlValidatorInterface
             }
             
             $mask = (int) $mask;
-            if ($mask < 0 || $mask > 128) {
+            $maxMask = filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) ? 32 : 128;
+            if ($mask < 0 || $mask > $maxMask) {
                 return false;
             }
             

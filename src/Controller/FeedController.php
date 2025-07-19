@@ -97,18 +97,31 @@ class FeedController extends AbstractController
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
         
         try {
+            // Decode the URL parameter to handle encoded characters and prevent bypass attempts
+            $decodedUrl = urldecode($id);
+            
+            // Validate the decoded URL format first
+            if (!filter_var($decodedUrl, FILTER_VALIDATE_URL)) {
+                return $this->json(['error' => 'Invalid URL format provided'], 400);
+            }
+            
+            // Additional check for potential path traversal attempts in encoded form
+            if (strpos($id, '%2E%2E') !== false || strpos($id, '..') !== false) {
+                return $this->json(['error' => 'Path traversal attempt detected'], 400);
+            }
+            
             // The route parameter is treated as a URL - validate it for SSRF protection
-            $validationResult = $feedParser->validateFeed($id);
+            $validationResult = $feedParser->validateFeed($decodedUrl);
             
             if (!$validationResult->isValid()) {
                 return $this->json(['error' => $validationResult->getMessage()], 400);
             }
             
-            $parsedFeed = $feedParser->parseFeed($id);
+            $parsedFeed = $feedParser->parseFeed($decodedUrl);
             $articles = $feedParser->extractArticles($parsedFeed);
             
             return $this->render('feed/preview.html.twig', [
-                'feed_url' => $id,
+                'feed_url' => $decodedUrl,
                 'feed' => $parsedFeed->getFeed(),
                 'articles' => array_slice($articles, 0, 5), // Show first 5 articles
             ]);

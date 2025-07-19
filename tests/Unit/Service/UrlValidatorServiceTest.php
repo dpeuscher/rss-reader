@@ -115,6 +115,44 @@ class UrlValidatorServiceTest extends TestCase
         }
     }
 
+    public function testIpv6BypassAttempts(): void
+    {
+        $ipv6BypassUrls = [
+            'http://[::ffff:192.168.1.1]/feed.xml',    // IPv6-mapped IPv4 private
+            'http://[::ffff:127.0.0.1]/feed.xml',      // IPv6-mapped IPv4 localhost
+            'http://[::ffff:169.254.169.254]/feed.xml', // IPv6-mapped AWS metadata
+            'http://[::1]:8080/feed.xml',               // IPv6 localhost with port
+            'http://[fc00::dead:beef]/feed.xml',        // unique local with custom address
+            'http://[fe80::1%eth0]/feed.xml',           // link-local with zone ID
+        ];
+
+        foreach ($ipv6BypassUrls as $url) {
+            $this->assertFalse(
+                $this->urlValidator->validateFeedUrl($url),
+                "IPv6 bypass attempt should be rejected: {$url}"
+            );
+        }
+    }
+
+    public function testMalformedIpv6Addresses(): void
+    {
+        $malformedIpv6s = [
+            'http://[::]/feed.xml',                     // unspecified address
+            'http://[:::1]/feed.xml',                   // too many colons
+            'http://[12345::1]/feed.xml',               // invalid hex group
+            'http://[::g]/feed.xml',                    // invalid hex character
+            'http://[1:2:3:4:5:6:7:8:9]/feed.xml',     // too many groups
+            'http://[1::2::3]/feed.xml',                // multiple :: sections
+        ];
+
+        foreach ($malformedIpv6s as $url) {
+            $this->assertFalse(
+                $this->urlValidator->validateFeedUrl($url),
+                "Malformed IPv6 address should be rejected: {$url}"
+            );
+        }
+    }
+
     public function testPublicIpAddresses(): void
     {
         // Note: These tests would pass validation but may fail DNS resolution

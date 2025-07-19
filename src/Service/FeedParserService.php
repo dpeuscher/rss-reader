@@ -23,6 +23,18 @@ class FeedParserService
         $this->httpClient = $httpClient ?: HttpClient::create();
     }
 
+    private function getSecureHttpOptions(): array
+    {
+        return [
+            'timeout' => 10,
+            'max_redirects' => 0,  // Disable automatic redirects for security
+            'max_duration' => 30,  // Prevent long-running requests
+            'headers' => [
+                'User-Agent' => 'RSS Reader/1.0',
+            ],
+        ];
+    }
+
     public function validateFeed(string $url): FeedValidationResult
     {
         try {
@@ -32,14 +44,7 @@ class FeedParserService
                 return new FeedValidationResult(false, 'Invalid or unsafe URL provided');
             }
 
-            $response = $this->httpClient->request('GET', $url, [
-                'timeout' => 10,
-                'max_redirects' => 0,  // Disable automatic redirects for security
-                'max_duration' => 30,  // Prevent long-running requests
-                'headers' => [
-                    'User-Agent' => 'RSS Reader/1.0',
-                ],
-            ]);
+            $response = $this->httpClient->request('GET', $url, $this->getSecureHttpOptions());
 
             if ($response->getStatusCode() !== 200) {
                 $this->logger->info('HTTP error during feed validation', [
@@ -71,14 +76,7 @@ class FeedParserService
             throw new \InvalidArgumentException('Invalid or unsafe URL provided');
         }
 
-        $response = $this->httpClient->request('GET', $url, [
-            'timeout' => 10,
-            'max_redirects' => 0,  // Disable automatic redirects for security
-            'max_duration' => 30,  // Prevent long-running requests
-            'headers' => [
-                'User-Agent' => 'RSS Reader/1.0',
-            ],
-        ]);
+        $response = $this->httpClient->request('GET', $url, $this->getSecureHttpOptions());
 
         $content = $response->getContent();
         $feed = Reader::importString($content);
