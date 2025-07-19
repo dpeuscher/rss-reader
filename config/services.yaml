@@ -22,3 +22,7 @@ services:
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
+    
+    # Explicitly bind the URL validator interface to the implementation
+    App\Service\UrlValidatorInterface:
+        alias: App\Service\UrlValidatorService
