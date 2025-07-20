@@ -123,13 +123,15 @@ class FeedHealthMonitor
     private function isValidXMLContent(string $content): bool
     {
         libxml_use_internal_errors(true);
-        libxml_disable_entity_loader(true);
         
+        // Use secure XML parsing flags to prevent XXE attacks
+        $oldValue = libxml_disable_entity_loader(true);
         $doc = simplexml_load_string(
             $content,
             'SimpleXMLElement',
-            LIBXML_NOCDATA | LIBXML_NOENT | LIBXML_DTDLOAD | LIBXML_DTDATTR
+            LIBXML_NOCDATA | LIBXML_NONET | LIBXML_NOENT | LIBXML_DTDLOAD | LIBXML_DTDATTR
         );
+        libxml_disable_entity_loader($oldValue);
         
         $errors = libxml_get_errors();
         libxml_clear_errors();

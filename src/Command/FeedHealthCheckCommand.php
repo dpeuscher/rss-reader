@@ -118,6 +118,7 @@ class FeedHealthCheckCommand extends Command
         
         if ($feed->getStatus() !== 'active') {
             $io->warning("Feed #{$feedId} is not active (status: {$feed->getStatus()})");
+            return Command::FAILURE;
         }
         
         $io->text("Checking feed: {$feed->getTitle()} ({$feed->getUrl()})");
@@ -129,22 +130,16 @@ class FeedHealthCheckCommand extends Command
             
             $io->success("Health check completed in {$duration}s");
             
-            $statusColor = match($result->getStatus()) {
-                'healthy' => 'green',
-                'warning' => 'yellow',
-                'unhealthy' => 'red',
-                default => 'white'
-            };
-            
             $io->table(
                 ['Property', 'Value'],
                 [
-                    ['Status', "<fg={$statusColor}>{$result->getStatus()}</fg={$statusColor}>"],
+                    ['Status', $this->formatStatus($result->getStatus())],
                     ['Response Time', $result->getResponseTime() ? $result->getResponseTime() . 'ms' : 'N/A'],
                     ['HTTP Status', $result->getHttpStatusCode() ?? 'N/A'],
                     ['Consecutive Failures', $result->getConsecutiveFailures() ?? 0],
                     ['Error Message', $result->getErrorMessage() ?? 'None'],
                     ['Checked At', $result->getCheckedAt()->format('Y-m-d H:i:s')],
+                    ['Duration', "{$duration}s"],
                 ]
             );
             
@@ -155,14 +150,26 @@ class FeedHealthCheckCommand extends Command
             
             if ($result->getStatus() === 'warning') {
                 $io->note('Feed has warnings but is functional');
+            } else {
+                $io->success('Feed is healthy');
             }
             
             return Command::SUCCESS;
             
         } catch (\Exception $e) {
-            $io->error("Error checking feed: {$e->getMessage()}");
+            $io->error("Failed to check feed health: {$e->getMessage()}");
             return Command::FAILURE;
         }
+    }
+    
+    private function formatStatus(string $status): string
+    {
+        return match($status) {
+            'healthy' => '<fg=green>Healthy</fg=green>',
+            'warning' => '<fg=yellow>Warning</fg=yellow>',
+            'unhealthy' => '<fg=red>Unhealthy</fg=red>',
+            default => $status
+        };
     }
 
     private function showHealthSummary(SymfonyStyle $io): int
