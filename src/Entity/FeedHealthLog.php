@@ -67,6 +67,14 @@ class FeedHealthLog
 
     public function setStatus(string $status): static
     {
+        $validStatuses = [self::STATUS_HEALTHY, self::STATUS_WARNING, self::STATUS_UNHEALTHY];
+        
+        if (!in_array($status, $validStatuses, true)) {
+            throw new \InvalidArgumentException(
+                sprintf('Invalid status "%s". Valid statuses are: %s', $status, implode(', ', $validStatuses))
+            );
+        }
+        
         $this->status = $status;
         return $this;
     }

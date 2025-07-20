@@ -2,6 +2,7 @@
 
 namespace App\Command;
 
+use App\Repository\FeedRepository;
 use App\Service\FeedHealthMonitor;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -17,7 +18,8 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 class FeedHealthCheckCommand extends Command
 {
     public function __construct(
-        private FeedHealthMonitor $healthMonitor
+        private FeedHealthMonitor $healthMonitor,
+        private FeedRepository $feedRepository
     ) {
         parent::__construct();
     }
@@ -107,10 +109,60 @@ class FeedHealthCheckCommand extends Command
     {
         $io->title("Checking Feed #{$feedId}");
         
-        // This would need to be implemented to check a specific feed
-        $io->error('Specific feed checking not yet implemented');
+        $feed = $this->feedRepository->find($feedId);
         
-        return Command::FAILURE;
+        if (!$feed) {
+            $io->error("Feed #{$feedId} not found");
+            return Command::FAILURE;
+        }
+        
+        if ($feed->getStatus() !== 'active') {
+            $io->warning("Feed #{$feedId} is not active (status: {$feed->getStatus()})");
+        }
+        
+        $io->text("Checking feed: {$feed->getTitle()} ({$feed->getUrl()})");
+        
+        try {
+            $startTime = microtime(true);
+            $result = $this->healthMonitor->checkFeedHealth($feed);
+            $duration = round(microtime(true) - $startTime, 2);
+            
+            $io->success("Health check completed in {$duration}s");
+            
+            $statusColor = match($result->getStatus()) {
+                'healthy' => 'green',
+                'warning' => 'yellow',
+                'unhealthy' => 'red',
+                default => 'white'
+            };
+            
+            $io->table(
+                ['Property', 'Value'],
+                [
+                    ['Status', "<fg={$statusColor}>{$result->getStatus()}</fg={$statusColor}>"],
+                    ['Response Time', $result->getResponseTime() ? $result->getResponseTime() . 'ms' : 'N/A'],
+                    ['HTTP Status', $result->getHttpStatusCode() ?? 'N/A'],
+                    ['Consecutive Failures', $result->getConsecutiveFailures() ?? 0],
+                    ['Error Message', $result->getErrorMessage() ?? 'None'],
+                    ['Checked At', $result->getCheckedAt()->format('Y-m-d H:i:s')],
+                ]
+            );
+            
+            if ($result->getStatus() === 'unhealthy') {
+                $io->warning('Feed is unhealthy and may need attention');
+                return Command::FAILURE;
+            }
+            
+            if ($result->getStatus() === 'warning') {
+                $io->note('Feed has warnings but is functional');
+            }
+            
+            return Command::SUCCESS;
+            
+        } catch (\Exception $e) {
+            $io->error("Error checking feed: {$e->getMessage()}");
+            return Command::FAILURE;
+        }
     }
 
     private function showHealthSummary(SymfonyStyle $io): int

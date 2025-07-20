@@ -15,6 +15,7 @@ class FeedHealthMonitor
     private const MAX_RESPONSE_TIME_WARNING = 5000; // 5 seconds
     private const MAX_RESPONSE_TIME_UNHEALTHY = 10000; // 10 seconds
     private const MAX_CONSECUTIVE_FAILURES = 3;
+    private const MIN_CONTENT_LENGTH = 100;
 
     public function __construct(
         private HttpClientInterface $httpClient,
@@ -100,7 +101,7 @@ class FeedHealthMonitor
 
     private function evaluateHealthStatus(int $responseTime, string $content): string
     {
-        if (empty($content) || strlen($content) < 100) {
+        if (empty($content) || strlen($content) < self::MIN_CONTENT_LENGTH) {
             return FeedHealthLog::STATUS_UNHEALTHY;
         }
 
@@ -122,7 +123,14 @@ class FeedHealthMonitor
     private function isValidXMLContent(string $content): bool
     {
         libxml_use_internal_errors(true);
-        $doc = simplexml_load_string($content);
+        libxml_disable_entity_loader(true);
+        
+        $doc = simplexml_load_string(
+            $content,
+            'SimpleXMLElement',
+            LIBXML_NOCDATA | LIBXML_NOENT | LIBXML_DTDLOAD | LIBXML_DTDATTR
+        );
+        
         $errors = libxml_get_errors();
         libxml_clear_errors();
         
