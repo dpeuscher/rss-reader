@@ -26,6 +26,7 @@
                                     <th>Feed</th>
                                     <th>Category</th>
                                     <th>Status</th>
+                                    <th>Health</th>
                                     <th>Last Updated</th>
                                     <th>Actions</th>
                                 </tr>
@@ -51,12 +52,38 @@
                                             </span>
                                         </td>
                                         <td>
+                                            {% set healthStatus = subscription.feed.healthStatus %}
+                                            <span class="badge 
+                                                {% if healthStatus == 'healthy' %}bg-success
+                                                {% elseif healthStatus == 'warning' %}bg-warning
+                                                {% else %}bg-danger{% endif %}
+                                                d-inline-flex align-items-center">
+                                                {% if healthStatus == 'healthy' %}
+                                                    <i class="bi bi-check-circle-fill me-1"></i>
+                                                {% elseif healthStatus == 'warning' %}
+                                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                                {% else %}
+                                                    <i class="bi bi-x-circle-fill me-1"></i>
+                                                {% endif %}
+                                                {{ healthStatus|title }}
+                                            </span>
+                                            {% if subscription.feed.consecutiveFailures > 0 %}
+                                                <br><small class="text-muted">{{ subscription.feed.consecutiveFailures }} consecutive failures</small>
+                                            {% endif %}
+                                            {% if subscription.feed.lastHealthCheck %}
+                                                <br><small class="text-muted">Last check: {{ subscription.feed.lastHealthCheck|date('M j, g:i A') }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
                                             <small>{{ subscription.feed.lastUpdated|date('M j, Y g:i A') }}</small>
                                         </td>
                                         <td>
                                             <div class="btn-group btn-group-sm">
                                                 <button class="btn btn-outline-primary" onclick="refreshFeed({{ subscription.feed.id }})">
                                                     Refresh
+                                                </button>
+                                                <button class="btn btn-outline-info" onclick="checkFeedHealth({{ subscription.feed.id }})" title="Check Health">
+                                                    <i class="bi bi-heart-pulse"></i>
                                                 </button>
                                                 <button class="btn btn-outline-danger" onclick="deleteFeed({{ subscription.feed.id }})">
                                                     Remove
@@ -168,6 +195,35 @@ function previewFeed() {
 function refreshFeed(feedId) {
     // TODO: Implement feed refresh
     alert('Feed refresh functionality will be implemented');
+}
+
+function checkFeedHealth(feedId) {
+    const button = event.target.closest('button');
+    const originalContent = button.innerHTML;
+    
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span>';
+    
+    fetch(`{{ path('app_feeds_index') }}/${feedId}/health-check`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Refresh the page to show updated health status
+            location.reload();
+        } else {
+            alert('Error checking feed health: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Error checking feed health');
+        console.error('Error:', error);
+    })
+    .finally(() => {
+        button.disabled = false;
+        button.innerHTML = originalContent;
+    });
 }
 
 function deleteFeed(feedId) {

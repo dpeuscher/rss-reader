@@ -36,16 +36,29 @@ class Feed
     #[ORM\Column(type: 'integer', options: ['default' => 60])]
     private int $refreshInterval = 60;
 
+    #[ORM\Column(length: 20, options: ['default' => 'healthy'])]
+    private string $healthStatus = 'healthy';
+
+    #[ORM\Column(type: 'datetime', nullable: true)]
+    private ?\DateTimeInterface $lastHealthCheck = null;
+
+    #[ORM\Column(type: 'integer', options: ['default' => 0])]
+    private int $consecutiveFailures = 0;
+
     #[ORM\OneToMany(mappedBy: 'feed', targetEntity: Article::class, orphanRemoval: true)]
     private Collection $articles;
 
     #[ORM\OneToMany(mappedBy: 'feed', targetEntity: Subscription::class, orphanRemoval: true)]
     private Collection $subscriptions;
 
+    #[ORM\OneToMany(mappedBy: 'feed', targetEntity: FeedHealthLog::class, orphanRemoval: true)]
+    private Collection $healthLogs;
+
     public function __construct()
     {
         $this->articles = new ArrayCollection();
         $this->subscriptions = new ArrayCollection();
+        $this->healthLogs = new ArrayCollection();
         $this->lastUpdated = new \DateTime();
     }
 
@@ -177,5 +190,77 @@ class Feed
             }
         }
         return $this;
+    }
+
+    public function getHealthStatus(): string
+    {
+        return $this->healthStatus;
+    }
+
+    public function setHealthStatus(string $healthStatus): static
+    {
+        $this->healthStatus = $healthStatus;
+        return $this;
+    }
+
+    public function getLastHealthCheck(): ?\DateTimeInterface
+    {
+        return $this->lastHealthCheck;
+    }
+
+    public function setLastHealthCheck(?\DateTimeInterface $lastHealthCheck): static
+    {
+        $this->lastHealthCheck = $lastHealthCheck;
+        return $this;
+    }
+
+    public function getConsecutiveFailures(): int
+    {
+        return $this->consecutiveFailures;
+    }
+
+    public function setConsecutiveFailures(int $consecutiveFailures): static
+    {
+        $this->consecutiveFailures = $consecutiveFailures;
+        return $this;
+    }
+
+    public function getHealthLogs(): Collection
+    {
+        return $this->healthLogs;
+    }
+
+    public function addHealthLog(FeedHealthLog $healthLog): static
+    {
+        if (!$this->healthLogs->contains($healthLog)) {
+            $this->healthLogs->add($healthLog);
+            $healthLog->setFeed($this);
+        }
+        return $this;
+    }
+
+    public function removeHealthLog(FeedHealthLog $healthLog): static
+    {
+        if ($this->healthLogs->removeElement($healthLog)) {
+            if ($healthLog->getFeed() === $this) {
+                $healthLog->setFeed(null);
+            }
+        }
+        return $this;
+    }
+
+    public function isHealthy(): bool
+    {
+        return $this->healthStatus === 'healthy';
+    }
+
+    public function isUnhealthy(): bool
+    {
+        return $this->healthStatus === 'unhealthy';
+    }
+
+    public function hasWarning(): bool
+    {
+        return $this->healthStatus === 'warning';
     }
 }
