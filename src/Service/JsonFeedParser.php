@@ -52,9 +52,12 @@ class JsonFeedParser
     private function parseItems(array $items): array
     {
         $articles = [];
-        $maxItems = 1000; // configurable item limit to prevent memory issues
+        
+        // Memory management: limit processing to prevent memory issues with large feeds
+        $maxItems = 1000; // configurable limit
+        $itemsToProcess = array_slice($items, 0, $maxItems);
 
-        foreach (array_slice($items, 0, $maxItems) as $item) {
+        foreach ($itemsToProcess as $item) {
             if (!is_array($item)) {
                 continue;
             }
@@ -234,7 +237,9 @@ class JsonFeedParser
 
     private function sanitizeHtml(string $html): string
     {
-        // Enhanced HTML sanitization - for production, use HTMLPurifier library
+        // SECURITY NOTE: This is basic HTML sanitization. 
+        // For production use, implement HTMLPurifier or similar robust sanitization library
+        // to prevent XSS attacks through malicious HTML content in JSON feeds.
         $allowed_tags = '<p><br><strong><em><ul><ol><li><h1><h2><h3><h4><h5><h6><a><img><blockquote><code><pre>';
         $cleaned = strip_tags($html, $allowed_tags);
         

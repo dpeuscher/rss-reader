@@ -139,11 +139,12 @@ class FeedParserService
         $article->setPublishedAt($entry->getDateCreated() ?: new \DateTime());
         
         $content = $entry->getContent() ?: $entry->getDescription();
-        $article->setContent($this->normalizeContent($content));
+        $article->setContent($content ? $this->normalizeContent($content) : '');
         $article->setContentType('html');
         
-        if ($entry->getDescription()) {
-            $article->setSummary($this->normalizeContent($entry->getDescription()));
+        $description = $entry->getDescription();
+        if ($description) {
+            $article->setSummary($this->normalizeContent($description));
         }
 
         // Set updated date if available
@@ -201,26 +202,26 @@ class FeedParserService
 
         if (!empty($authors)) {
             foreach ($authors as $authorData) {
-            if (is_array($authorData)) {
-                $name = $authorData['name'] ?? $authorData['title'] ?? 'Unknown Author';
-                $email = $authorData['email'] ?? null;
-                $url = $authorData['uri'] ?? $authorData['url'] ?? null;
-            } else {
-                $name = (string) $authorData;
-                $email = null;
-                $url = null;
-            }
+                if (is_array($authorData)) {
+                    $name = $authorData['name'] ?? $authorData['title'] ?? 'Unknown Author';
+                    $email = $authorData['email'] ?? null;
+                    $url = $authorData['uri'] ?? $authorData['url'] ?? null;
+                } else {
+                    $name = (string) $authorData;
+                    $email = null;
+                    $url = null;
+                }
 
-            if (trim($name)) {
-                $author = new ArticleAuthor();
-                $author->setArticle($article);
-                $author->setName(trim($name));
-                if ($email) $author->setEmail(trim($email));
-                if ($url) $author->setUrl(trim($url));
-                
-                $article->addAuthor($author);
+                if (trim($name)) {
+                    $author = new ArticleAuthor();
+                    $author->setArticle($article);
+                    $author->setName(trim($name));
+                    if ($email) $author->setEmail(trim($email));
+                    if ($url) $author->setUrl(trim($url));
+                    
+                    $article->addAuthor($author);
+                }
             }
-        }
         }
     }
 
