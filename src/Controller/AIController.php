@@ -149,7 +149,7 @@ class AIController extends AbstractController
                 ], 400);
             }
             
-            // Validate input structure
+            // Validate input structure with Symfony Validator
             $constraints = new Assert\Collection([
                 'fields' => [
                     'action' => [
@@ -182,12 +182,12 @@ class AIController extends AbstractController
             $action = $data['action'];
             $metadata = $data['metadata'] ?? [];
             
-            // Sanitize metadata values
+            // Sanitize metadata values - additional security layer
             $sanitizedMetadata = [];
             foreach ($metadata as $key => $value) {
                 if (is_string($key) && strlen($key) <= 50 && 
                     (is_string($value) || is_numeric($value) || is_bool($value))) {
-                    $sanitizedMetadata[$key] = is_string($value) ? substr($value, 0, 200) : $value;
+                    $sanitizedMetadata[$key] = is_string($value) ? substr(strip_tags($value), 0, 200) : $value;
                 }
             }
             

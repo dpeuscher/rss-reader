@@ -21,6 +21,9 @@ class SummarizationService
     public function generateSummary(Article $article): string
     {
         try {
+            // Validate AI service configuration
+            $this->validateConfiguration();
+            
             $content = $this->prepareContent($article);
             
             if (empty($content)) {
@@ -199,5 +202,17 @@ class SummarizationService
         }
         
         return trim($summary) ?: 'Brief summary not available.';
+    }
+
+    private function validateConfiguration(): void
+    {
+        // Log configuration status for debugging
+        if (empty($this->openaiApiKey) && empty($this->anthropicApiKey)) {
+            $this->logger->warning(
+                'No AI services configured. OpenAI and Anthropic API keys are both empty. ' .
+                'AI-powered summarization will not be available. Please configure at least one API key ' .
+                'for optimal performance.'
+            );
+        }
     }
 }
