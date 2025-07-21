@@ -40,6 +40,21 @@ class Article
     #[ORM\OneToMany(mappedBy: 'article', targetEntity: UserArticle::class, orphanRemoval: true)]
     private Collection $userArticles;
 
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $aiSummary = null;
+
+    #[ORM\Column(type: 'json', nullable: true)]
+    private ?array $aiCategories = null;
+
+    #[ORM\Column(type: 'float', nullable: true)]
+    private ?float $aiScore = null;
+
+    #[ORM\Column(type: 'integer', nullable: true)]
+    private ?int $aiReadingTime = null;
+
+    #[ORM\Column(type: 'datetime', nullable: true)]
+    private ?\DateTimeInterface $aiProcessedAt = null;
+
     public function __construct()
     {
         $this->userArticles = new ArrayCollection();
@@ -148,6 +163,61 @@ class Article
                 $userArticle->setArticle(null);
             }
         }
+        return $this;
+    }
+
+    public function getAiSummary(): ?string
+    {
+        return $this->aiSummary;
+    }
+
+    public function setAiSummary(?string $aiSummary): static
+    {
+        $this->aiSummary = $aiSummary;
+        return $this;
+    }
+
+    public function getAiCategories(): ?array
+    {
+        return $this->aiCategories;
+    }
+
+    public function setAiCategories(?array $aiCategories): static
+    {
+        $this->aiCategories = $aiCategories;
+        return $this;
+    }
+
+    public function getAiScore(): ?float
+    {
+        return $this->aiScore;
+    }
+
+    public function setAiScore(?float $aiScore): static
+    {
+        $this->aiScore = $aiScore;
+        return $this;
+    }
+
+    public function getAiReadingTime(): ?int
+    {
+        return $this->aiReadingTime;
+    }
+
+    public function setAiReadingTime(?int $aiReadingTime): static
+    {
+        $this->aiReadingTime = $aiReadingTime;
+        return $this;
+    }
+
+    public function getAiProcessedAt(): ?\DateTimeInterface
+    {
+        return $this->aiProcessedAt;
+    }
+
+    public function setAiProcessedAt(?\DateTimeInterface $aiProcessedAt): static
+    {
+        $this->aiProcessedAt = $aiProcessedAt;
         return $this;
     }
 }
