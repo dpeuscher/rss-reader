@@ -1,0 +1,332 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Smart Inbox - AI-Powered Content{% endblock %}
+
+{% block body %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-9">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="fas fa-brain"></i> Smart Inbox</h1>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline-secondary" id="refreshFeed">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" id="viewSettings">
+                        <i class="fas fa-cog"></i> AI Settings
+                    </button>
+                </div>
+            </div>
+
+            {% if articles is empty %}
+                <div class="alert alert-info" role="alert">
+                    <h4 class="alert-heading">Welcome to Smart Inbox!</h4>
+                    <p>Your personalized content will appear here once you start reading articles.</p>
+                    <hr>
+                    <p class="mb-0">The AI system learns from your reading patterns to surface the most relevant content.</p>
+                </div>
+            {% else %}
+                <div id="articlesList">
+                    {% for article in articles %}
+                        <div class="card mb-3 article-card" data-article-id="{{ article.id }}">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    {% if article.aiCategories %}
+                                        {% for category in article.aiCategories[:2] %}
+                                            <span class="badge bg-secondary me-2">{{ category.name }}</span>
+                                        {% endfor %}
+                                    {% endif %}
+                                    {% if article.aiReadingTime %}
+                                        <small class="text-muted">
+                                            <i class="fas fa-clock"></i> {{ article.aiReadingTime }} min read
+                                        </small>
+                                    {% endif %}
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    {% if article.aiScore %}
+                                        <div class="ai-score me-2" title="AI Relevance Score">
+                                            <small class="text-muted">AI: {{ (article.aiScore * 100)|round }}%</small>
+                                        </div>
+                                    {% endif %}
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-primary btn-summarize" 
+                                                data-article-id="{{ article.id }}" 
+                                                title="Generate AI Summary">
+                                            <i class="fas fa-compress-alt"></i>
+                                        </button>
+                                        <button class="btn btn-outline-success btn-star" 
+                                                data-article-id="{{ article.id }}" 
+                                                title="Star Article">
+                                            <i class="fas fa-star"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <a href="{{ article.url }}" target="_blank" class="text-decoration-none article-link" 
+                                       data-article-id="{{ article.id }}">
+                                        {{ article.title }}
+                                    </a>
+                                </h5>
+                                
+                                {% if article.aiSummary %}
+                                    <div class="ai-summary mb-3 p-3 bg-light rounded">
+                                        <h6 class="text-primary mb-2">
+                                            <i class="fas fa-robot"></i> AI Summary
+                                        </h6>
+                                        <p class="mb-0">{{ article.aiSummary }}</p>
+                                    </div>
+                                {% endif %}
+                                
+                                {% if article.summary %}
+                                    <p class="card-text">{{ article.summary|slice(0, 200) }}{% if article.summary|length > 200 %}...{% endif %}</p>
+                                {% endif %}
+                                
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">
+                                        <strong>{{ article.feed.title }}</strong>
+                                        • {{ article.publishedAt|date('M j, Y g:i A') }}
+                                    </small>
+                                    <div class="article-actions">
+                                        <button class="btn btn-sm btn-outline-info btn-similar" 
+                                                data-article-id="{{ article.id }}" 
+                                                title="Find Similar Articles">
+                                            <i class="fas fa-search-plus"></i> Similar
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Similar articles container (hidden initially) -->
+                                <div class="similar-articles-container mt-3" style="display: none;">
+                                    <h6 class="text-info">Similar Articles:</h6>
+                                    <div class="similar-articles-list"></div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Load More Button -->
+                <div class="text-center mt-4">
+                    <button class="btn btn-primary" id="loadMoreArticles">
+                        <i class="fas fa-plus"></i> Load More Articles
+                    </button>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Sidebar with User Insights -->
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-line"></i> Your Reading Insights</h5>
+                </div>
+                <div class="card-body">
+                    {% if user_insights %}
+                        <div class="mb-3">
+                            <h6>Reading Stats</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>{{ user_insights.total_articles_read }}</strong> articles read</li>
+                                <li><strong>{{ user_insights.total_articles_starred }}</strong> articles starred</li>
+                                <li><strong>{{ user_insights.average_reading_time }}</strong> min avg. reading time</li>
+                            </ul>
+                        </div>
+                        
+                        {% if user_insights.top_categories %}
+                            <div class="mb-3">
+                                <h6>Top Categories</h6>
+                                {% for category in user_insights.top_categories %}
+                                    <div class="d-flex justify-content-between">
+                                        <span>{{ category.category }}</span>
+                                        <span class="text-muted">{{ (category.engagement_rate * 100)|round }}%</span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        
+                        <div class="mb-3">
+                            <h6>Engagement Score</h6>
+                            <div class="progress">
+                                <div class="progress-bar" role="progressbar" 
+                                     style="width: {{ (user_insights.engagement_score * 100)|round }}%">
+                                    {{ (user_insights.engagement_score * 100)|round }}%
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">Start reading articles to see your personalized insights!</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- AI Features Help -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6><i class="fas fa-question-circle"></i> AI Features</h6>
+                </div>
+                <div class="card-body">
+                    <small class="text-muted">
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-compress-alt text-primary"></i> <strong>AI Summary:</strong> Get concise summaries</li>
+                            <li><i class="fas fa-search-plus text-info"></i> <strong>Similar:</strong> Find related articles</li>
+                            <li><i class="fas fa-star text-warning"></i> <strong>Star:</strong> Save for later</li>
+                            <li><i class="fas fa-chart-line text-success"></i> <strong>AI Score:</strong> Relevance rating</li>
+                        </ul>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AI Summary Modal -->
+<div class="modal fade" id="summaryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-robot"></i> AI Summary</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="loading-spinner text-center" style="display: none;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Generating summary...</span>
+                    </div>
+                    <p class="mt-2">Generating AI summary...</p>
+                </div>
+                <div class="summary-content"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Article interaction tracking
+    function trackInteraction(articleId, action, metadata = {}) {
+        fetch(`/ai/article/${articleId}/track-interaction`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+                action: action,
+                metadata: metadata
+            })
+        });
+    }
+    
+    // Track article link clicks
+    document.querySelectorAll('.article-link').forEach(link => {
+        link.addEventListener('click', function() {
+            const articleId = this.dataset.articleId;
+            trackInteraction(articleId, 'read', {
+                timestamp: new Date().toISOString(),
+                url: this.href
+            });
+        });
+    });
+    
+    // AI Summary functionality
+    document.querySelectorAll('.btn-summarize').forEach(button => {
+        button.addEventListener('click', function() {
+            const articleId = this.dataset.articleId;
+            const modal = new bootstrap.Modal(document.getElementById('summaryModal'));
+            const loadingSpinner = document.querySelector('#summaryModal .loading-spinner');
+            const summaryContent = document.querySelector('#summaryModal .summary-content');
+            
+            modal.show();
+            loadingSpinner.style.display = 'block';
+            summaryContent.innerHTML = '';
+            
+            fetch(`/ai/article/${articleId}/summarize`, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                loadingSpinner.style.display = 'none';
+                if (data.success) {
+                    summaryContent.innerHTML = `
+                        <div class="alert alert-success">
+                            <p>${data.summary}</p>
+                            ${data.cached ? '<small class="text-muted">Cached result</small>' : '<small class="text-muted">Fresh AI-generated summary</small>'}
+                        </div>
+                    `;
+                } else {
+                    summaryContent.innerHTML = `
+                        <div class="alert alert-danger">
+                            <p>Failed to generate summary. Please try again.</p>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                loadingSpinner.style.display = 'none';
+                summaryContent.innerHTML = `
+                    <div class="alert alert-danger">
+                        <p>An error occurred while generating the summary.</p>
+                    </div>
+                `;
+            });
+        });
+    });
+    
+    // Similar articles functionality
+    document.querySelectorAll('.btn-similar').forEach(button => {
+        button.addEventListener('click', function() {
+            const articleId = this.dataset.articleId;
+            const container = this.closest('.card').querySelector('.similar-articles-container');
+            const list = container.querySelector('.similar-articles-list');
+            
+            if (container.style.display === 'none') {
+                // Load similar articles
+                fetch(`/ai/article/${articleId}/similar?limit=3`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.articles.length > 0) {
+                        list.innerHTML = data.articles.map(article => `
+                            <div class="border-start border-3 border-info ps-2 mb-2">
+                                <a href="${article.url}" target="_blank" class="text-decoration-none">
+                                    <small><strong>${article.title}</strong></small>
+                                </a>
+                                <br>
+                                <small class="text-muted">${article.feed_title} • ${article.reading_time || '?'} min read</small>
+                            </div>
+                        `).join('');
+                        container.style.display = 'block';
+                        this.innerHTML = '<i class="fas fa-eye-slash"></i> Hide Similar';
+                    } else {
+                        list.innerHTML = '<p class="text-muted">No similar articles found.</p>';
+                        container.style.display = 'block';
+                    }
+                });
+            } else {
+                // Hide similar articles
+                container.style.display = 'none';
+                this.innerHTML = '<i class="fas fa-search-plus"></i> Similar';
+            }
+        });
+    });
+    
+    // Star functionality
+    document.querySelectorAll('.btn-star').forEach(button => {
+        button.addEventListener('click', function() {
+            const articleId = this.dataset.articleId;
+            trackInteraction(articleId, 'star');
+            this.classList.toggle('btn-outline-success');
+            this.classList.toggle('btn-success');
+        });
+    });
+    
+    // Refresh feed
+    document.getElementById('refreshFeed')?.addEventListener('click', function() {
+        location.reload();
+    });
+});
+</script>
+{% endblock %}
