@@ -25,6 +25,7 @@
                                 <tr>
                                     <th>Feed</th>
                                     <th>Category</th>
+                                    <th>Format</th>
                                     <th>Status</th>
                                     <th>Last Updated</th>
                                     <th>Actions</th>
@@ -44,6 +45,32 @@
                                             {% else %}
                                                 <span class="text-muted">Uncategorized</span>
                                             {% endif %}
+                                        </td>
+                                        <td>
+                                            {% set formatClass = 'bg-info' %}
+                                            {% if subscription.feed.feedFormat == 'RSS_2_0' %}
+                                                {% set formatClass = 'bg-success' %}
+                                            {% elseif subscription.feed.feedFormat == 'ATOM_1_0' %}
+                                                {% set formatClass = 'bg-primary' %}
+                                            {% elseif subscription.feed.feedFormat == 'JSON_FEED' %}
+                                                {% set formatClass = 'bg-warning text-dark' %}
+                                            {% elseif subscription.feed.feedFormat == 'RSS_1_0' %}
+                                                {% set formatClass = 'bg-success' %}
+                                            {% else %}
+                                                {% set formatClass = 'bg-secondary' %}
+                                            {% endif %}
+                                            
+                                            {% set formatDisplay = {
+                                                'RSS_2_0': 'RSS 2.0',
+                                                'RSS_1_0': 'RSS 1.0',
+                                                'ATOM_1_0': 'Atom 1.0',
+                                                'JSON_FEED': 'JSON Feed',
+                                                'UNKNOWN': 'Unknown'
+                                            } %}
+                                            
+                                            <span class="badge {{ formatClass }}">
+                                                {{ formatDisplay[subscription.feed.feedFormat] ?? 'Unknown' }}
+                                            </span>
                                         </td>
                                         <td>
                                             <span class="badge {% if subscription.feed.status == 'active' %}bg-success{% else %}bg-danger{% endif %}">
@@ -98,7 +125,7 @@
                         <label for="feedUrl" class="form-label">RSS Feed URL</label>
                         <input type="url" class="form-control" id="feedUrl" name="url" required 
                                placeholder="https://example.com/feed.rss">
-                        <div class="form-text">Enter the URL of an RSS or Atom feed</div>
+                        <div class="form-text">Enter the URL of an RSS, Atom, or JSON Feed</div>
                     </div>
                     <div class="mb-3">
                         <button type="button" class="btn btn-outline-secondary" onclick="previewFeed()">

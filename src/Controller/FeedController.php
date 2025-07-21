@@ -99,9 +99,23 @@ class FeedController extends AbstractController
             $parsedFeed = $feedParser->parseFeed($id);
             $articles = $feedParser->extractArticles($parsedFeed);
             
+            // Handle different feed formats for display
+            $feedData = null;
+            if ($parsedFeed->getFormat() === 'JSON_FEED') {
+                $jsonData = $parsedFeed->getJsonData();
+                $feedData = (object) [
+                    'title' => $jsonData['title'] ?? 'Untitled Feed',
+                    'description' => $jsonData['description'] ?? 'No description',
+                    'link' => $jsonData['home_page_url'] ?? '#'
+                ];
+            } else {
+                $feedData = $parsedFeed->getFeed();
+            }
+            
             return $this->render('feed/preview.html.twig', [
                 'feed_url' => $id,
-                'feed' => $parsedFeed->getFeed(),
+                'feed' => $feedData,
+                'feedFormat' => $parsedFeed->getFormat(),
                 'articles' => array_slice($articles, 0, 5), // Show first 5 articles
             ]);
         } catch (\Exception $e) {
