@@ -52,8 +52,9 @@ class JsonFeedParser
     private function parseItems(array $items): array
     {
         $articles = [];
+        $maxItems = 1000; // configurable item limit to prevent memory issues
 
-        foreach ($items as $item) {
+        foreach (array_slice($items, 0, $maxItems) as $item) {
             if (!is_array($item)) {
                 continue;
             }
@@ -233,13 +234,16 @@ class JsonFeedParser
 
     private function sanitizeHtml(string $html): string
     {
-        // Basic HTML sanitization - in production, consider using HTMLPurifier
+        // Enhanced HTML sanitization - for production, use HTMLPurifier library
         $allowed_tags = '<p><br><strong><em><ul><ol><li><h1><h2><h3><h4><h5><h6><a><img><blockquote><code><pre>';
         $cleaned = strip_tags($html, $allowed_tags);
         
-        // Remove dangerous attributes
+        // Remove dangerous attributes and protocols
         $cleaned = preg_replace('/on\w+="[^"]*"/i', '', $cleaned);
-        $cleaned = preg_replace('/javascript:/i', '', $cleaned);
+        $cleaned = preg_replace('/on\w+=\'[^\']*\'/i', '', $cleaned);
+        $cleaned = preg_replace('/(javascript|vbscript|data|blob):/i', '', $cleaned);
+        $cleaned = preg_replace('/style="[^"]*"/i', '', $cleaned);
+        $cleaned = preg_replace('/style=\'[^\']*\'/i', '', $cleaned);
         
         return trim($cleaned);
     }

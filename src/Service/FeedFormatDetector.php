@@ -20,7 +20,7 @@ class FeedFormatDetector
         }
 
         // JSON Feed detection - check if content starts with { and contains JSON Feed signature
-        if ($content[0] === '{') {
+        if (!empty($content) && $content[0] === '{') {
             $data = json_decode($content, true);
             if (json_last_error() === JSON_ERROR_NONE) {
                 if (isset($data['version']) && 

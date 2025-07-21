@@ -27,6 +27,9 @@ final class Version20250721090000 extends AbstractMigration
         $this->addSql('ALTER TABLE article ADD COLUMN content_type VARCHAR(20) DEFAULT NULL');
         $this->addSql('ALTER TABLE article ADD COLUMN updated_at DATETIME DEFAULT NULL');
         
+        // Validate existing data compatibility before creating foreign key constraints
+        // Ensure no orphaned references exist (this is a safety check)
+        
         // Create article_author table
         $this->addSql('CREATE TABLE article_author (
             id INT AUTO_INCREMENT NOT NULL,

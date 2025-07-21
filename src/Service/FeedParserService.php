@@ -199,7 +199,8 @@ class FeedParserService
             return;
         }
 
-        foreach ($authors as $authorData) {
+        if (!empty($authors)) {
+            foreach ($authors as $authorData) {
             if (is_array($authorData)) {
                 $name = $authorData['name'] ?? $authorData['title'] ?? 'Unknown Author';
                 $email = $authorData['email'] ?? null;
@@ -219,6 +220,7 @@ class FeedParserService
                 
                 $article->addAuthor($author);
             }
+        }
         }
     }
 

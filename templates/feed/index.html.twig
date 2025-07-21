@@ -69,7 +69,7 @@
                                             } %}
                                             
                                             <span class="badge {{ formatClass }}">
-                                                {{ formatDisplay[subscription.feed.feedFormat] ?? 'Unknown' }}
+                                                {{ (formatDisplay[subscription.feed.feedFormat] ?? 'Unknown')|e }}
                                             </span>
                                         </td>
                                         <td>
