@@ -14,23 +14,38 @@ class FeedParserService
 {
     private HttpClientInterface $httpClient;
 
-    public function __construct(HttpClientInterface $httpClient = null)
-    {
-        $this->httpClient = $httpClient ?: HttpClient::create();
+    public function __construct(
+        private UrlValidator $urlValidator,
+        HttpClientInterface $httpClient = null
+    ) {
+        $this->httpClient = $httpClient ?: HttpClient::create([
+            'timeout' => 30,
+            'max_redirects' => 5,
+            'headers' => [
+                'User-Agent' => 'RSS Reader/1.0',
+            ],
+        ]);
     }
 
     public function validateFeed(string $url): FeedValidationResult
     {
         try {
-            $response = $this->httpClient->request('GET', $url, [
-                'timeout' => 10,
-                'headers' => [
-                    'User-Agent' => 'RSS Reader/1.0',
-                ],
+            // First validate the URL for security
+            $urlValidation = $this->urlValidator->validateUrl($url);
+            if (!$urlValidation->isValid()) {
+                return new FeedValidationResult(false, 'Invalid feed URL: ' . $urlValidation->getMessage());
+            }
+
+            // Use the validated URL (may be normalized)
+            $validatedUrl = $urlValidation->getValidatedUrl() ?: $url;
+
+            $response = $this->httpClient->request('GET', $validatedUrl, [
+                'max_duration' => 30,
+                'max_size' => 10 * 1024 * 1024, // 10MB limit
             ]);
 
             if ($response->getStatusCode() !== 200) {
-                return new FeedValidationResult(false, 'HTTP error: ' . $response->getStatusCode());
+                return new FeedValidationResult(false, 'Unable to fetch feed');
             }
 
             $content = $response->getContent();
@@ -38,17 +53,24 @@ class FeedParserService
             
             return new FeedValidationResult(true, 'Feed is valid', $feed);
         } catch (\Exception $e) {
-            return new FeedValidationResult(false, 'Error parsing feed: ' . $e->getMessage());
+            return new FeedValidationResult(false, 'Unable to validate feed');
         }
     }
 
     public function parseFeed(string $url): ParsedFeed
     {
-        $response = $this->httpClient->request('GET', $url, [
-            'timeout' => 10,
-            'headers' => [
-                'User-Agent' => 'RSS Reader/1.0',
-            ],
+        // Validate URL first for security
+        $urlValidation = $this->urlValidator->validateUrl($url);
+        if (!$urlValidation->isValid()) {
+            throw new \InvalidArgumentException('Invalid feed URL: ' . $urlValidation->getMessage());
+        }
+
+        // Use the validated URL (may be normalized)
+        $validatedUrl = $urlValidation->getValidatedUrl() ?: $url;
+
+        $response = $this->httpClient->request('GET', $validatedUrl, [
+            'max_duration' => 30,
+            'max_size' => 10 * 1024 * 1024, // 10MB limit
         ]);
 
         $content = $response->getContent();
