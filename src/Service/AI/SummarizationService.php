@@ -27,6 +27,17 @@ class SummarizationService
                 return 'Content not available for summarization.';
             }
 
+            // Check if AI services are configured
+            $hasAIServices = !empty($this->openaiApiKey) || !empty($this->anthropicApiKey);
+            
+            if (!$hasAIServices) {
+                $this->logger->notice('No AI services configured, falling back to extractive summary', [
+                    'articleId' => $article->getId(),
+                    'suggestion' => 'Configure OPENAI_API_KEY or ANTHROPIC_API_KEY for enhanced AI summarization'
+                ]);
+                return $this->generateExtractiveSummary($content);
+            }
+
             // Try primary LLM (OpenAI)
             if (!empty($this->openaiApiKey)) {
                 try {
@@ -49,7 +60,10 @@ class SummarizationService
                 }
             }
 
-            // Fallback to extractive summary
+            // Final fallback to extractive summary
+            $this->logger->info('All AI services failed, using extractive summarization', [
+                'articleId' => $article->getId()
+            ]);
             return $this->generateExtractiveSummary($content);
 
         } catch (\Exception $e) {
@@ -60,6 +74,20 @@ class SummarizationService
             
             return 'Summary unavailable.';
         }
+    }
+
+    public function isAIServiceConfigured(): bool
+    {
+        return !empty($this->openaiApiKey) || !empty($this->anthropicApiKey);
+    }
+
+    public function getConfigurationStatus(): array
+    {
+        return [
+            'openai_configured' => !empty($this->openaiApiKey),
+            'anthropic_configured' => !empty($this->anthropicApiKey),
+            'ai_services_available' => $this->isAIServiceConfigured()
+        ];
     }
 
     private function prepareContent(Article $article): string

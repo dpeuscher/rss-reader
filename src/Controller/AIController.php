@@ -13,6 +13,8 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 #[Route('/ai')]
 #[IsGranted('ROLE_USER')]
@@ -22,7 +24,8 @@ class AIController extends AbstractController
         private AIArticleProcessor $aiProcessor,
         private PersonalizationService $personalizationService,
         private SummarizationService $summarizationService,
-        private EntityManagerInterface $entityManager
+        private EntityManagerInterface $entityManager,
+        private ValidatorInterface $validator
     ) {}
 
     #[Route('/smart-inbox', name: 'ai_smart_inbox', methods: ['GET'])]
@@ -120,16 +123,79 @@ class AIController extends AbstractController
     {
         try {
             $user = $this->getUser();
-            $data = json_decode($request->getContent(), true);
             
-            $action = $data['action'] ?? 'view';
+            // Validate request size (max 10KB)
+            $contentLength = $request->headers->get('Content-Length', 0);
+            if ($contentLength > 10240) {
+                return $this->json([
+                    'success' => false,
+                    'error' => 'Request payload too large (max 10KB)'
+                ], 413);
+            }
+            
+            $content = $request->getContent();
+            if (strlen($content) > 10240) {
+                return $this->json([
+                    'success' => false,
+                    'error' => 'Request payload too large (max 10KB)'
+                ], 413);
+            }
+            
+            $data = json_decode($content, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                return $this->json([
+                    'success' => false,
+                    'error' => 'Invalid JSON data'
+                ], 400);
+            }
+            
+            // Validate input structure
+            $constraints = new Assert\Collection([
+                'fields' => [
+                    'action' => [
+                        new Assert\NotBlank(),
+                        new Assert\Choice(['view', 'read', 'star', 'unstar', 'share', 'click', 'summarize'])
+                    ],
+                    'metadata' => [
+                        new Assert\Optional([
+                            new Assert\Type('array'),
+                            new Assert\Count(['max' => 20]) // Max 20 metadata fields
+                        ])
+                    ]
+                ],
+                'allowExtraFields' => false
+            ]);
+            
+            $violations = $this->validator->validate($data, $constraints);
+            if (count($violations) > 0) {
+                $errors = [];
+                foreach ($violations as $violation) {
+                    $errors[] = $violation->getMessage();
+                }
+                return $this->json([
+                    'success' => false,
+                    'error' => 'Validation failed',
+                    'details' => $errors
+                ], 400);
+            }
+            
+            $action = $data['action'];
             $metadata = $data['metadata'] ?? [];
+            
+            // Sanitize metadata values
+            $sanitizedMetadata = [];
+            foreach ($metadata as $key => $value) {
+                if (is_string($key) && strlen($key) <= 50 && 
+                    (is_string($value) || is_numeric($value) || is_bool($value))) {
+                    $sanitizedMetadata[$key] = is_string($value) ? substr($value, 0, 200) : $value;
+                }
+            }
             
             $this->personalizationService->updateUserPreferences(
                 $user,
                 $article,
                 $action,
-                $metadata
+                $sanitizedMetadata
             );
             
             return $this->json(['success' => true]);
