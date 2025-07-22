@@ -34,13 +34,13 @@
                                 {% for subscription in subscriptions %}
                                     <tr>
                                         <td>
-                                            <strong>{{ subscription.feed.title }}</strong>
+                                            <strong>{{ subscription.feed.title|e('html') }}</strong>
                                             <br>
                                             <small class="text-muted">{{ subscription.feed.url }}</small>
                                         </td>
                                         <td>
                                             {% if subscription.category %}
-                                                <span class="badge bg-secondary">{{ subscription.category.name }}</span>
+                                                <span class="badge bg-secondary">{{ subscription.category.name|e('html') }}</span>
                                             {% else %}
                                                 <span class="text-muted">Uncategorized</span>
                                             {% endif %}
