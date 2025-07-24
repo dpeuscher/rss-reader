@@ -13,14 +13,22 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 class FeedParserService
 {
     private HttpClientInterface $httpClient;
+    private UrlValidationService $urlValidator;
 
-    public function __construct(HttpClientInterface $httpClient = null)
+    public function __construct(HttpClientInterface $httpClient = null, UrlValidationService $urlValidator = null)
     {
         $this->httpClient = $httpClient ?: HttpClient::create();
+        $this->urlValidator = $urlValidator ?: new UrlValidationService($this->httpClient);
     }
 
     public function validateFeed(string $url): FeedValidationResult
     {
+        // First, validate the URL for security
+        $urlValidation = $this->urlValidator->validateUrl($url);
+        if (!$urlValidation->isValid()) {
+            return new FeedValidationResult(false, $urlValidation->getMessage());
+        }
+
         try {
             $response = $this->httpClient->request('GET', $url, [
                 'timeout' => 10,
@@ -44,6 +52,12 @@ class FeedParserService
 
     public function parseFeed(string $url): ParsedFeed
     {
+        // Validate the URL for security before making request
+        $urlValidation = $this->urlValidator->validateUrl($url);
+        if (!$urlValidation->isValid()) {
+            throw new \InvalidArgumentException($urlValidation->getMessage());
+        }
+
         $response = $this->httpClient->request('GET', $url, [
             'timeout' => 10,
             'headers' => [
