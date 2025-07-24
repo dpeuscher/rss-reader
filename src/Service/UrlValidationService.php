@@ -108,7 +108,12 @@ class UrlValidationService
             return $this->ipv6InRange($ip, $subnet, (int)$bits);
         }
         
-        // Handle IPv4
+        // Handle IPv4 - validate addresses before conversion
+        if (!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) || 
+            !filter_var($subnet, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            return false;
+        }
+        
         $ip = ip2long($ip);
         $subnet = ip2long($subnet);
         
@@ -156,20 +161,29 @@ class UrlValidationService
     {
         $ips = [];
         
-        // Get IPv4 addresses
-        $ipv4 = gethostbynamel($hostname);
-        if ($ipv4 !== false) {
-            $ips = array_merge($ips, $ipv4);
-        }
+        // Set DNS timeout to prevent DoS attacks via slow DNS responses
+        $originalTimeout = ini_get('default_socket_timeout');
+        ini_set('default_socket_timeout', 3);
         
-        // Get IPv6 addresses
-        $records = dns_get_record($hostname, DNS_AAAA);
-        if ($records !== false) {
-            foreach ($records as $record) {
-                if (isset($record['ipv6'])) {
-                    $ips[] = $record['ipv6'];
+        try {
+            // Get IPv4 addresses
+            $ipv4 = gethostbynamel($hostname);
+            if ($ipv4 !== false) {
+                $ips = array_merge($ips, $ipv4);
+            }
+            
+            // Get IPv6 addresses
+            $records = dns_get_record($hostname, DNS_AAAA);
+            if ($records !== false) {
+                foreach ($records as $record) {
+                    if (isset($record['ipv6'])) {
+                        $ips[] = $record['ipv6'];
+                    }
                 }
             }
+        } finally {
+            // Restore original timeout
+            ini_set('default_socket_timeout', $originalTimeout);
         }
         
         return array_unique($ips);

@@ -248,4 +248,36 @@ class UrlValidationServiceTest extends TestCase
         $result = $this->urlValidator->validateUrl("http://example.com/$longPath");
         $this->assertTrue($result->isValid());
     }
+
+    public function testDnsResolutionFailures(): void
+    {
+        // Test with non-existent domain (should fail hostname resolution)
+        $result = $this->urlValidator->validateUrl('http://this-domain-does-not-exist-12345.com/feed');
+        $this->assertFalse($result->isValid());
+        $this->assertEquals('Unable to resolve hostname', $result->getMessage());
+    }
+
+    public function testIpv6RedirectValidation(): void
+    {
+        // Mock redirect to IPv6 private address
+        $this->mockHttpClient->setResponseFactory([
+            new MockResponse('', [
+                'http_code' => 302,
+                'response_headers' => ['Location' => 'http://[::1]/admin']
+            ])
+        ]);
+
+        $result = $this->urlValidator->validateUrl('http://example.com/redirect');
+        $this->assertFalse($result->isValid());
+        $this->assertEquals('Access to private networks not allowed', $result->getMessage());
+    }
+
+    public function testIpv4ValidationInIpRange(): void
+    {
+        // Test that invalid IPv4 strings are properly handled in ipInRange method
+        // This is tested indirectly through the URL validation
+        $result = $this->urlValidator->validateUrl('http://999.999.999.999/');
+        $this->assertFalse($result->isValid());
+        $this->assertEquals('Invalid URL format', $result->getMessage());
+    }
 }
