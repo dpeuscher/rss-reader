@@ -8,6 +8,7 @@ class UrlValidationService
 {
     private HttpClientInterface $httpClient;
     private array $allowedProtocols = ['http', 'https'];
+    private array $dnsCache = [];
     private array $privateIpRanges = [
         '127.0.0.0/8',      // Loopback
         '10.0.0.0/8',       // Private Class A
@@ -63,8 +64,8 @@ class UrlValidationService
                 return new UrlValidationResult(false, 'Access to private networks not allowed');
             }
         } else {
-            // Step 6: DNS resolution validation
-            $resolvedIps = $this->resolveHostname($host);
+            // Step 6: DNS resolution validation with caching
+            $resolvedIps = $this->resolveHostnameWithCache($host);
             if (empty($resolvedIps)) {
                 return new UrlValidationResult(false, 'Unable to resolve hostname');
             }
@@ -189,6 +190,18 @@ class UrlValidationService
         return array_unique($ips);
     }
 
+    private function resolveHostnameWithCache(string $hostname): array
+    {
+        if (isset($this->dnsCache[$hostname])) {
+            return $this->dnsCache[$hostname];
+        }
+        
+        $resolvedIps = $this->resolveHostname($hostname);
+        $this->dnsCache[$hostname] = $resolvedIps;
+        
+        return $resolvedIps;
+    }
+
     private function validateRedirects(string $url): UrlValidationResult
     {
         try {
@@ -222,8 +235,8 @@ class UrlValidationService
                             return new UrlValidationResult(false, 'Access to private networks not allowed');
                         }
                     } else {
-                        // Resolve redirect hostname
-                        $resolvedIps = $this->resolveHostname($redirectHost);
+                        // Resolve redirect hostname with caching
+                        $resolvedIps = $this->resolveHostnameWithCache($redirectHost);
                         foreach ($resolvedIps as $ip) {
                             if ($this->isPrivateIp($ip)) {
                                 return new UrlValidationResult(false, 'Access to private networks not allowed');

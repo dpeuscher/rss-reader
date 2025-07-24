@@ -6,6 +6,7 @@ use App\Service\UrlValidationService;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpClient\MockHttpClient;
 use Symfony\Component\HttpClient\Response\MockResponse;
+use Symfony\Component\HttpClient\Exception\TransportException;
 
 class UrlValidationServiceTest extends TestCase
 {
@@ -270,6 +271,30 @@ class UrlValidationServiceTest extends TestCase
         $result = $this->urlValidator->validateUrl('http://example.com/redirect');
         $this->assertFalse($result->isValid());
         $this->assertEquals('Access to private networks not allowed', $result->getMessage());
+        
+        // Mock redirect to IPv6 unique local address
+        $this->mockHttpClient->setResponseFactory([
+            new MockResponse('', [
+                'http_code' => 302,
+                'response_headers' => ['Location' => 'http://[fc00::1]/admin']
+            ])
+        ]);
+
+        $result = $this->urlValidator->validateUrl('http://example.com/redirect');
+        $this->assertFalse($result->isValid());
+        $this->assertEquals('Access to private networks not allowed', $result->getMessage());
+        
+        // Mock redirect to IPv6 link-local address
+        $this->mockHttpClient->setResponseFactory([
+            new MockResponse('', [
+                'http_code' => 302,
+                'response_headers' => ['Location' => 'http://[fe80::1]/admin']
+            ])
+        ]);
+
+        $result = $this->urlValidator->validateUrl('http://example.com/redirect');
+        $this->assertFalse($result->isValid());
+        $this->assertEquals('Access to private networks not allowed', $result->getMessage());
     }
 
     public function testIpv4ValidationInIpRange(): void
@@ -279,5 +304,38 @@ class UrlValidationServiceTest extends TestCase
         $result = $this->urlValidator->validateUrl('http://999.999.999.999/');
         $this->assertFalse($result->isValid());
         $this->assertEquals('Invalid URL format', $result->getMessage());
+    }
+
+    public function testDnsCachePerformance(): void
+    {
+        // Mock successful response
+        $this->mockHttpClient->setResponseFactory([
+            new MockResponse('', ['http_code' => 200])
+        ]);
+        
+        // Test that DNS resolution is cached (multiple calls to same domain)
+        $url = 'http://example.com/feed';
+        $result1 = $this->urlValidator->validateUrl($url);
+        $result2 = $this->urlValidator->validateUrl($url);
+        
+        $this->assertTrue($result1->isValid());
+        $this->assertTrue($result2->isValid());
+        
+        // Both calls should succeed, demonstrating caching doesn't break functionality
+    }
+
+    public function testIpv4ValidationBeforeConversion(): void
+    {
+        // Test that malformed IPv4 addresses are properly rejected
+        $malformedIps = [
+            'http://256.256.256.256/',  // Invalid IPv4 (out of range)
+            'http://192.168.1/',        // Incomplete IPv4
+            'http://192.168.1.1.1/',    // Too many octets
+        ];
+        
+        foreach ($malformedIps as $url) {
+            $result = $this->urlValidator->validateUrl($url);
+            $this->assertFalse($result->isValid(), "Malformed IP in URL should be rejected: $url");
+        }
     }
 }
