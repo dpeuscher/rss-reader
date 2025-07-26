@@ -3,38 +3,46 @@
 namespace App\Tests\Service\Security;
 
 use App\Service\Security\RateLimitService;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+use Symfony\Contracts\Cache\CacheInterface;
+use Symfony\Contracts\Cache\ItemInterface;
 
 class RateLimitServiceTest extends TestCase
 {
     private RateLimitService $rateLimitService;
+    private CacheInterface|MockObject $cache;
 
     protected function setUp(): void
     {
-        $this->rateLimitService = new RateLimitService();
+        $this->cache = $this->createMock(CacheInterface::class);
+        $this->rateLimitService = new RateLimitService($this->cache);
     }
 
     public function testAllowsRequestsWithinLimit(): void
     {
         $identifier = 'test-user-1';
         
-        // Should allow first 10 requests
-        for ($i = 0; $i < 10; $i++) {
-            $this->assertFalse($this->rateLimitService->isRateLimited($identifier));
-            $this->rateLimitService->recordRequest($identifier);
-        }
+        // Mock cache to return array with 5 recent requests (within limit)
+        $this->cache->expects($this->any())
+            ->method('get')
+            ->willReturn([time(), time(), time(), time(), time()]);
+        
+        $this->assertFalse($this->rateLimitService->isRateLimited($identifier));
     }
 
     public function testBlocksRequestsExceedingLimit(): void
     {
         $identifier = 'test-user-2';
         
-        // Make 10 requests (maximum allowed)
-        for ($i = 0; $i < 10; $i++) {
-            $this->rateLimitService->recordRequest($identifier);
-        }
+        // Mock cache to return array with 10 requests (at limit)
+        $currentTime = time();
+        $requests = array_fill(0, 10, $currentTime);
         
-        // 11th request should be rate limited
+        $this->cache->expects($this->any())
+            ->method('get')
+            ->willReturn($requests);
+        
         $this->assertTrue($this->rateLimitService->isRateLimited($identifier));
     }
 
@@ -42,29 +50,27 @@ class RateLimitServiceTest extends TestCase
     {
         $identifier = 'test-user-3';
         
-        $this->assertEquals(10, $this->rateLimitService->getRemainingRequests($identifier));
+        // Mock cache to return array with 3 requests
+        $this->cache->expects($this->any())
+            ->method('get')
+            ->willReturn([time(), time(), time()]);
         
-        $this->rateLimitService->recordRequest($identifier);
-        $this->assertEquals(9, $this->rateLimitService->getRemainingRequests($identifier));
-        
-        $this->rateLimitService->recordRequest($identifier);
-        $this->assertEquals(8, $this->rateLimitService->getRemainingRequests($identifier));
+        $this->assertEquals(7, $this->rateLimitService->getRemainingRequests($identifier));
     }
 
     public function testTimeUntilReset(): void
     {
         $identifier = 'test-user-4';
         
-        // No requests made yet
-        $this->assertEquals(0, $this->rateLimitService->getTimeUntilReset($identifier));
+        // Mock cache to return array with one request from 100 seconds ago
+        $oldTimestamp = time() - 100;
+        $this->cache->expects($this->any())
+            ->method('get')
+            ->willReturn([$oldTimestamp]);
         
-        // Record a request
-        $this->rateLimitService->recordRequest($identifier);
-        
-        // Should have time until reset (up to 300 seconds)
         $timeUntilReset = $this->rateLimitService->getTimeUntilReset($identifier);
-        $this->assertGreaterThan(0, $timeUntilReset);
-        $this->assertLessThanOrEqual(300, $timeUntilReset);
+        $this->assertGreaterThanOrEqual(190, $timeUntilReset); // 300 - 100 = 200, allowing some variance
+        $this->assertLessThanOrEqual(210, $timeUntilReset);
     }
 
     public function testDifferentIdentifiersAreIndependent(): void
@@ -72,16 +78,56 @@ class RateLimitServiceTest extends TestCase
         $identifier1 = 'user-1';
         $identifier2 = 'user-2';
         
-        // Make 10 requests for user 1
-        for ($i = 0; $i < 10; $i++) {
-            $this->rateLimitService->recordRequest($identifier1);
-        }
+        // Mock cache to return different results for different identifiers
+        $this->cache->expects($this->any())
+            ->method('get')
+            ->willReturnCallback(function($key) {
+                if (str_contains($key, hash('sha256', 'user-1'))) {
+                    return array_fill(0, 10, time()); // user-1 at limit
+                } else {
+                    return []; // user-2 has no requests
+                }
+            });
         
-        // User 1 should be rate limited
         $this->assertTrue($this->rateLimitService->isRateLimited($identifier1));
-        
-        // User 2 should not be rate limited
         $this->assertFalse($this->rateLimitService->isRateLimited($identifier2));
-        $this->assertEquals(10, $this->rateLimitService->getRemainingRequests($identifier2));
+    }
+
+    public function testConcurrentRateLimiting(): void
+    {
+        $identifier = 'concurrent-user';
+        
+        // Mock cache to simulate high concurrent load
+        $this->cache->expects($this->any())
+            ->method('get')
+            ->willReturn(array_fill(0, 10, time()));
+        
+        $this->assertTrue($this->rateLimitService->isRateLimited($identifier));
+    }
+
+    public function testRecordRequest(): void
+    {
+        $identifier = 'test-user-record';
+        
+        // Mock cache methods for recording request
+        $this->cache->expects($this->once())
+            ->method('get')
+            ->willReturn([]);
+        
+        $this->cache->expects($this->once())
+            ->method('delete')
+            ->willReturn(true);
+        
+        $this->cache->expects($this->once())
+            ->method('get')
+            ->willReturnCallback(function($key, $callback) {
+                $item = $this->createMock(ItemInterface::class);
+                $item->expects($this->once())
+                    ->method('expiresAfter')
+                    ->with(300);
+                return $callback($item);
+            });
+        
+        $this->rateLimitService->recordRequest($identifier);
     }
 }

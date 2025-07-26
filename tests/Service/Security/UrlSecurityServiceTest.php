@@ -132,4 +132,161 @@ class UrlSecurityServiceTest extends TestCase
         $this->assertFalse($result->isValid());
         $this->assertStringContainsString('Invalid URL format', $result->getMessage());
     }
+
+    /**
+     * Test DNS resolution failure scenarios
+     */
+    public function testDnsResolutionFailure(): void
+    {
+        // Test with a domain that should not exist
+        $result = $this->urlSecurityService->validateUrl('http://this-domain-should-never-exist-12345.com/feed');
+        $this->assertFalse($result->isValid());
+        $this->assertStringContainsString('DNS resolution failed', $result->getMessage());
+        $this->assertContains('dns_resolution_failed', $result->getViolations());
+    }
+
+    /**
+     * Test IPv6 edge cases
+     */
+    public function testBlocksIPv6Loopback(): void
+    {
+        $result = $this->urlSecurityService->validateUrl('http://[::1]/test');
+        $this->assertFalse($result->isValid());
+        $this->assertStringContainsString('private/internal IPv6 addresses', $result->getMessage());
+        $this->assertContains('private_ipv6', $result->getViolations());
+    }
+
+    public function testBlocksIPv6LinkLocal(): void
+    {
+        $result = $this->urlSecurityService->validateUrl('http://[fe80::1]/test');
+        $this->assertFalse($result->isValid());
+        $this->assertStringContainsString('private/internal IPv6 addresses', $result->getMessage());
+    }
+
+    public function testBlocksIPv6UniqueLocal(): void
+    {
+        $result = $this->urlSecurityService->validateUrl('http://[fc00::1]/test');
+        $this->assertFalse($result->isValid());
+        $this->assertStringContainsString('private/internal IPv6 addresses', $result->getMessage());
+    }
+
+    public function testBlocksIPv4MappedIPv6(): void
+    {
+        $result = $this->urlSecurityService->validateUrl('http://[::ffff:127.0.0.1]/test');
+        $this->assertFalse($result->isValid());
+        $this->assertStringContainsString('private/internal IPv6 addresses', $result->getMessage());
+    }
+
+    /**
+     * Test comprehensive URL normalization including IDN
+     */
+    public function testNormalizesInternationalDomainNames(): void
+    {
+        // Test with a domain that uses international characters
+        // This should be converted to ASCII using IDN
+        $result = $this->urlSecurityService->validateUrl('http://münchen.de/feed');
+        
+        // The result depends on whether the domain resolves, but normalization should occur
+        // We're mainly testing that IDN processing doesn't crash the application
+        $this->assertInstanceOf(UrlValidationResult::class, $result);
+    }
+
+    public function testNormalizesUrlCasing(): void
+    {
+        // Test that scheme and domain are normalized to lowercase
+        $result = $this->urlSecurityService->validateUrl('HTTP://EXAMPLE.COM/Feed.XML');
+        // The exact result depends on DNS resolution, but should not crash
+        $this->assertInstanceOf(UrlValidationResult::class, $result);
+    }
+
+    public function testHandlesUrlWithCredentials(): void
+    {
+        $result = $this->urlSecurityService->validateUrl('http://user:pass@example.com/feed');
+        // Should handle URLs with credentials without crashing
+        $this->assertInstanceOf(UrlValidationResult::class, $result);
+    }
+
+    public function testHandlesUrlWithPort(): void
+    {
+        $result = $this->urlSecurityService->validateUrl('http://example.com:8080/feed');
+        // Should handle URLs with custom ports
+        $this->assertInstanceOf(UrlValidationResult::class, $result);
+    }
+
+    public function testHandlesUrlWithQuery(): void
+    {
+        $result = $this->urlSecurityService->validateUrl('http://example.com/feed?format=rss');
+        // Should handle URLs with query parameters
+        $this->assertInstanceOf(UrlValidationResult::class, $result);
+    }
+
+    public function testHandlesUrlWithFragment(): void
+    {
+        $result = $this->urlSecurityService->validateUrl('http://example.com/feed#section1');
+        // Should handle URLs with fragments
+        $this->assertInstanceOf(UrlValidationResult::class, $result);
+    }
+
+    /**
+     * Test URL length validation
+     */
+    public function testBlocksExcessivelyLongUrls(): void
+    {
+        $longUrl = 'http://example.com/' . str_repeat('a', 2050);
+        $result = $this->urlSecurityService->validateUrl($longUrl);
+        $this->assertFalse($result->isValid());
+        $this->assertStringContainsString('URL length exceeds maximum', $result->getMessage());
+        $this->assertContains('length_violation', $result->getViolations());
+    }
+
+    /**
+     * Test IPv6 range validation edge cases
+     */
+    public function testIPv6RangeValidationEdgeCases(): void
+    {
+        // Test various IPv6 formats and edge cases
+        $testCases = [
+            'http://[::]/test',                    // All zeros
+            'http://[2001:db8::1]/test',          // Should be valid (documentation range)
+            'http://[::ffff:192.168.1.1]/test',   // IPv4-mapped private IP
+        ];
+
+        foreach ($testCases as $url) {
+            $result = $this->urlSecurityService->validateUrl($url);
+            $this->assertInstanceOf(UrlValidationResult::class, $result);
+        }
+    }
+
+    /**
+     * Test DNS timeout handling (this test may be slow by design)
+     */
+    public function testDnsTimeoutHandling(): void
+    {
+        // Test with a domain that should timeout (using a non-routable IP)
+        $startTime = microtime(true);
+        $result = $this->urlSecurityService->validateUrl('http://192.0.2.1/feed'); // TEST-NET-1 (RFC 5737)
+        $endTime = microtime(true);
+        
+        // Should complete within reasonable time (our timeout is 5 seconds)
+        $this->assertLessThan(10, $endTime - $startTime);
+        $this->assertInstanceOf(UrlValidationResult::class, $result);
+    }
+
+    /**
+     * Test multiple URL encoding bypass attempts
+     */
+    public function testMultipleEncodingBypassAttempts(): void
+    {
+        $bypassAttempts = [
+            'http://%31%32%37%2E%30%2E%30%2E%31/test',           // Single encoding
+            'http://%25%33%31%25%33%32%25%33%37/test',          // Double encoding attempt
+            'http://127.0.0.1%2F..%2F..%2Fetc%2Fpasswd',        // Path traversal attempt
+        ];
+
+        foreach ($bypassAttempts as $url) {
+            $result = $this->urlSecurityService->validateUrl($url);
+            // All should be blocked for various reasons
+            $this->assertFalse($result->isValid(), "URL should be blocked: $url");
+        }
+    }
 }

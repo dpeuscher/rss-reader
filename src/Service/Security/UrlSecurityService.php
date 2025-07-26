@@ -323,4 +323,30 @@ class UrlSecurityService implements UrlSecurityServiceInterface
         
         return true;
     }
+    
+    private function normalizeIPv6(string $ip): string
+    {
+        // Remove brackets if present
+        $ip = trim($ip, '[]');
+        
+        // Handle IPv4-mapped IPv6 addresses
+        if (str_contains($ip, '::ffff:') && str_contains($ip, '.')) {
+            // This is an IPv4-mapped IPv6 address, keep as is for proper validation
+            return $ip;
+        }
+        
+        // Expand :: notation to handle edge cases properly
+        if (str_contains($ip, '::')) {
+            $parts = explode('::', $ip);
+            if (count($parts) === 2) {
+                $left = $parts[0] === '' ? [] : explode(':', $parts[0]);
+                $right = $parts[1] === '' ? [] : explode(':', $parts[1]);
+                $missing = 8 - count($left) - count($right);
+                $middle = array_fill(0, $missing, '0');
+                $ip = implode(':', array_merge($left, $middle, $right));
+            }
+        }
+        
+        return $ip;
+    }
 }
