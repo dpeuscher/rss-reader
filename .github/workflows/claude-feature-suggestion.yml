@@ -1,8 +1,8 @@
 name: Claude – Feature Suggestion (Feeling Lucky)
 
 on:
-  schedule:
-    - cron: '0 1 * * *'  # 03:00 MESZ / 02:00 MEZ
+#  schedule:
+#    - cron: '0 1 * * *'  # 03:00 MESZ / 02:00 MEZ
   workflow_dispatch:
 
 concurrency:
