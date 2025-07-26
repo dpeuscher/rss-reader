@@ -1,8 +1,8 @@
 name: Claude – Autonomous Code Analysis
 
 on:
-  schedule:
-    - cron: '0 0 * * *'  # 02:00 MESZ / 01:00 MEZ
+#  schedule:
+#    - cron: '0 0 * * *'  # 02:00 MESZ / 01:00 MEZ
   workflow_dispatch:
 
 concurrency:
