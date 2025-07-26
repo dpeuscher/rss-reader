@@ -2,6 +2,8 @@
 
 namespace App\Service\Security;
 
+use Symfony\Component\String\ByteString;
+
 class UrlSecurityService implements UrlSecurityServiceInterface
 {
     private const MAX_URL_LENGTH = 2048;
@@ -72,14 +74,47 @@ class UrlSecurityService implements UrlSecurityServiceInterface
 
     private function normalizeUrl(string $url): string
     {
-        // Decode URL-encoded characters
-        $url = urldecode($url);
-        
-        // Remove extra whitespace
+        // Remove extra whitespace first
         $url = trim($url);
+        
+        // Multiple rounds of URL decoding to handle double-encoding
+        $previousUrl = '';
+        $iterations = 0;
+        while ($url !== $previousUrl && $iterations < 5) {
+            $previousUrl = $url;
+            $url = urldecode($url);
+            $iterations++;
+        }
+        
+        // Handle different URL encoding schemes
+        $url = html_entity_decode($url, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        
+        // Normalize Unicode characters (IDN handling)
+        if (function_exists('idn_to_ascii')) {
+            $parsedUrl = parse_url($url);
+            if (isset($parsedUrl['host'])) {
+                $normalizedHost = idn_to_ascii($parsedUrl['host'], IDNA_DEFAULT, INTL_IDNA_VARIANT_UTS46);
+                if ($normalizedHost !== false) {
+                    $url = str_replace($parsedUrl['host'], $normalizedHost, $url);
+                }
+            }
+        }
+        
+        // Convert to lowercase for scheme and host
+        $parsedUrl = parse_url($url);
+        if (isset($parsedUrl['scheme'])) {
+            $url = preg_replace('/^' . preg_quote($parsedUrl['scheme'], '/') . ':/', strtolower($parsedUrl['scheme']) . ':', $url);
+        }
+        if (isset($parsedUrl['host'])) {
+            $url = str_replace('://' . $parsedUrl['host'], '://' . strtolower($parsedUrl['host']), $url);
+        }
         
         // Normalize multiple slashes in path (but not in protocol)
         $url = preg_replace('#(?<!:)//+#', '/', $url);
+        
+        // Remove default ports
+        $url = preg_replace('#:80(?=/|$)#', '', $url);
+        $url = preg_replace('#:443(?=/|$)#', '', preg_replace('#^https://#', 'https://', $url));
         
         return $url;
     }
@@ -174,25 +209,44 @@ class UrlSecurityService implements UrlSecurityServiceInterface
     private function resolveDomainToIPs(string $domain): array
     {
         $ips = [];
+        $timeout = 5; // 5 second timeout
         
-        // Get A records (IPv4)
-        $aRecords = dns_get_record($domain, DNS_A);
-        if ($aRecords !== false) {
-            foreach ($aRecords as $record) {
-                if (isset($record['ip'])) {
-                    $ips[] = $record['ip'];
+        // Use stream context for timeout control
+        $context = stream_context_create([
+            'http' => [
+                'timeout' => $timeout
+            ]
+        ]);
+        
+        // Set DNS timeout using default_socket_timeout
+        $originalTimeout = ini_get('default_socket_timeout');
+        ini_set('default_socket_timeout', $timeout);
+        
+        try {
+            // Get A records (IPv4) with timeout
+            $aRecords = @dns_get_record($domain, DNS_A);
+            if ($aRecords !== false) {
+                foreach ($aRecords as $record) {
+                    if (isset($record['ip'])) {
+                        $ips[] = $record['ip'];
+                    }
                 }
             }
-        }
-        
-        // Get AAAA records (IPv6)
-        $aaaaRecords = dns_get_record($domain, DNS_AAAA);
-        if ($aaaaRecords !== false) {
-            foreach ($aaaaRecords as $record) {
-                if (isset($record['ipv6'])) {
-                    $ips[] = $record['ipv6'];
+            
+            // Get AAAA records (IPv6) with timeout
+            $aaaaRecords = @dns_get_record($domain, DNS_AAAA);
+            if ($aaaaRecords !== false) {
+                foreach ($aaaaRecords as $record) {
+                    if (isset($record['ipv6'])) {
+                        $ips[] = $record['ipv6'];
+                    }
                 }
             }
+        } catch (\Exception $e) {
+            throw new \Exception('DNS resolution failed or timed out: ' . $e->getMessage());
+        } finally {
+            // Restore original timeout
+            ini_set('default_socket_timeout', $originalTimeout);
         }
         
         if (empty($ips)) {
@@ -214,8 +268,19 @@ class UrlSecurityService implements UrlSecurityServiceInterface
     
     private function ipv6InRange(string $ip, string $cidr): bool
     {
-        [$network, $prefixLength] = explode('/', $cidr);
+        if (!str_contains($cidr, '/')) {
+            return false;
+        }
         
+        [$network, $prefixLength] = explode('/', $cidr, 2);
+        $prefixLength = (int)$prefixLength;
+        
+        // Validate prefix length
+        if ($prefixLength < 0 || $prefixLength > 128) {
+            return false;
+        }
+        
+        // Normalize IPv6 addresses and convert to binary
         $ipBinary = inet_pton($ip);
         $networkBinary = inet_pton($network);
         
@@ -223,19 +288,33 @@ class UrlSecurityService implements UrlSecurityServiceInterface
             return false;
         }
         
-        $bytesToCheck = intval($prefixLength / 8);
-        $bitsToCheck = $prefixLength % 8;
+        // Use ByteString for safer binary operations
+        $ipBytes = new ByteString($ipBinary);
+        $networkBytes = new ByteString($networkBinary);
         
-        // Check full bytes
-        if ($bytesToCheck > 0 && substr($ipBinary, 0, $bytesToCheck) !== substr($networkBinary, 0, $bytesToCheck)) {
+        if ($ipBytes->length() !== 16 || $networkBytes->length() !== 16) {
             return false;
         }
         
-        // Check remaining bits
-        if ($bitsToCheck > 0 && $bytesToCheck < 16) {
-            $ipByte = ord($ipBinary[$bytesToCheck]);
-            $networkByte = ord($networkBinary[$bytesToCheck]);
-            $mask = 0xFF << (8 - $bitsToCheck);
+        // Calculate mask
+        $fullBytes = intdiv($prefixLength, 8);
+        $remainingBits = $prefixLength % 8;
+        
+        // Compare full bytes
+        if ($fullBytes > 0) {
+            $ipPrefix = $ipBytes->slice(0, $fullBytes);
+            $networkPrefix = $networkBytes->slice(0, $fullBytes);
+            
+            if (!$ipPrefix->equals($networkPrefix)) {
+                return false;
+            }
+        }
+        
+        // Compare remaining bits if any
+        if ($remainingBits > 0 && $fullBytes < 16) {
+            $ipByte = ord($ipBytes->slice($fullBytes, 1)->toString());
+            $networkByte = ord($networkBytes->slice($fullBytes, 1)->toString());
+            $mask = (0xFF << (8 - $remainingBits)) & 0xFF;
             
             if (($ipByte & $mask) !== ($networkByte & $mask)) {
                 return false;

@@ -2,71 +2,87 @@
 
 namespace App\Service\Security;
 
+use Symfony\Contracts\Cache\CacheInterface;
+use Symfony\Contracts\Cache\ItemInterface;
+
 class RateLimitService
 {
     private const MAX_REQUESTS = 10;
     private const TIME_WINDOW = 300; // 5 minutes in seconds
+    private const CACHE_PREFIX = 'rate_limit_';
     
-    private array $requests = [];
+    public function __construct(
+        private readonly CacheInterface $cache
+    ) {}
 
     public function isRateLimited(string $identifier): bool
     {
-        $now = time();
-        $windowStart = $now - self::TIME_WINDOW;
-        
-        // Initialize if not exists
-        if (!isset($this->requests[$identifier])) {
-            $this->requests[$identifier] = [];
-        }
-        
-        // Clean old requests outside the time window
-        $this->requests[$identifier] = array_filter(
-            $this->requests[$identifier],
-            fn($timestamp) => $timestamp > $windowStart
-        );
+        $cacheKey = $this->getCacheKey($identifier);
+        $requests = $this->getRequestsFromCache($cacheKey);
         
         // Check if limit is exceeded
-        return count($this->requests[$identifier]) >= self::MAX_REQUESTS;
+        return count($requests) >= self::MAX_REQUESTS;
     }
     
     public function recordRequest(string $identifier): void
     {
         $now = time();
+        $cacheKey = $this->getCacheKey($identifier);
         
-        if (!isset($this->requests[$identifier])) {
-            $this->requests[$identifier] = [];
-        }
+        // Get current requests and add new one
+        $requests = $this->getRequestsFromCache($cacheKey);
+        $requests[] = $now;
         
-        $this->requests[$identifier][] = $now;
+        // Store updated requests in cache
+        $this->cache->delete($cacheKey);
+        $this->cache->get($cacheKey, function (ItemInterface $item) use ($requests) {
+            $item->expiresAfter(self::TIME_WINDOW);
+            return $requests;
+        });
     }
     
     public function getRemainingRequests(string $identifier): int
     {
-        $now = time();
-        $windowStart = $now - self::TIME_WINDOW;
+        $cacheKey = $this->getCacheKey($identifier);
+        $requests = $this->getRequestsFromCache($cacheKey);
         
-        if (!isset($this->requests[$identifier])) {
-            return self::MAX_REQUESTS;
-        }
-        
-        // Clean old requests outside the time window
-        $this->requests[$identifier] = array_filter(
-            $this->requests[$identifier],
-            fn($timestamp) => $timestamp > $windowStart
-        );
-        
-        return max(0, self::MAX_REQUESTS - count($this->requests[$identifier]));
+        return max(0, self::MAX_REQUESTS - count($requests));
     }
     
     public function getTimeUntilReset(string $identifier): int
     {
-        if (!isset($this->requests[$identifier]) || empty($this->requests[$identifier])) {
+        $cacheKey = $this->getCacheKey($identifier);
+        $requests = $this->getRequestsFromCache($cacheKey);
+        
+        if (empty($requests)) {
             return 0;
         }
         
-        $oldestRequest = min($this->requests[$identifier]);
+        $oldestRequest = min($requests);
         $resetTime = $oldestRequest + self::TIME_WINDOW;
         
         return max(0, $resetTime - time());
+    }
+    
+    private function getCacheKey(string $identifier): string
+    {
+        return self::CACHE_PREFIX . hash('sha256', $identifier);
+    }
+    
+    private function getRequestsFromCache(string $cacheKey): array
+    {
+        $requests = $this->cache->get($cacheKey, function (ItemInterface $item) {
+            $item->expiresAfter(self::TIME_WINDOW);
+            return [];
+        });
+        
+        // Clean old requests outside the time window
+        $now = time();
+        $windowStart = $now - self::TIME_WINDOW;
+        
+        return array_filter(
+            $requests,
+            fn($timestamp) => $timestamp > $windowStart
+        );
     }
 }
