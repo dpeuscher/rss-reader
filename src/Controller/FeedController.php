@@ -6,6 +6,7 @@ use App\Entity\Feed;
 use App\Entity\Subscription;
 use App\Repository\SubscriptionRepository;
 use App\Service\FeedParserService;
+use App\Service\Security\RateLimitService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -85,9 +86,23 @@ class FeedController extends AbstractController
     }
 
     #[Route('/{id}/preview', name: 'app_feeds_preview', methods: ['GET'])]
-    public function preview(string $id, FeedParserService $feedParser): Response
-    {
+    public function preview(
+        string $id, 
+        FeedParserService $feedParser, 
+        RateLimitService $rateLimitService,
+        Request $request
+    ): Response {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
+        
+        // Rate limiting check
+        $clientIp = $request->getClientIp() ?? '127.0.0.1';
+        if ($rateLimitService->isRateLimited($clientIp)) {
+            $timeUntilReset = $rateLimitService->getTimeUntilReset($clientIp);
+            return $this->json([
+                'error' => 'Rate limit exceeded. Too many preview requests.',
+                'retry_after' => $timeUntilReset
+            ], 429);
+        }
         
         try {
             $validationResult = $feedParser->validateFeed($id);
@@ -95,6 +110,9 @@ class FeedController extends AbstractController
             if (!$validationResult->isValid()) {
                 return $this->json(['error' => $validationResult->getMessage()], 400);
             }
+            
+            // Record the request for rate limiting
+            $rateLimitService->recordRequest($clientIp);
             
             $parsedFeed = $feedParser->parseFeed($id);
             $articles = $feedParser->extractArticles($parsedFeed);
