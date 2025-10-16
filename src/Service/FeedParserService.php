@@ -9,50 +9,111 @@ use Laminas\Feed\Reader\Entry\EntryInterface;
 use Laminas\Feed\Reader\FeedInterface;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
+use Psr\Log\LoggerInterface;
 
 class FeedParserService
 {
-    private HttpClientInterface $httpClient;
+    private SecureHttpClient $secureHttpClient;
+    private UrlSecurityValidator $urlValidator;
+    private LoggerInterface $logger;
 
-    public function __construct(HttpClientInterface $httpClient = null)
-    {
-        $this->httpClient = $httpClient ?: HttpClient::create();
+    public function __construct(
+        SecureHttpClient $secureHttpClient,
+        UrlSecurityValidator $urlValidator,
+        LoggerInterface $logger
+    ) {
+        $this->secureHttpClient = $secureHttpClient;
+        $this->urlValidator = $urlValidator;
+        $this->logger = $logger;
     }
 
     public function validateFeed(string $url): FeedValidationResult
     {
         try {
-            $response = $this->httpClient->request('GET', $url, [
-                'timeout' => 10,
+            // Step 1: Validate URL for security compliance
+            $urlValidation = $this->urlValidator->validateUrl($url);
+            if (!$urlValidation->isValid()) {
+                $this->logger->warning('Feed validation failed due to URL security violation', [
+                    'url' => $url,
+                    'reason' => $urlValidation->getMessage()
+                ]);
+                return new FeedValidationResult(false, $urlValidation->getMessage());
+            }
+
+            // Step 2: Make secure HTTP request
+            $secureResponse = $this->secureHttpClient->request('GET', $url, [
                 'headers' => [
-                    'User-Agent' => 'RSS Reader/1.0',
+                    'Accept' => 'application/rss+xml, application/atom+xml, application/xml, text/xml',
                 ],
             ]);
 
+            if (!$secureResponse->isSuccess()) {
+                return new FeedValidationResult(false, $secureResponse->getError());
+            }
+
+            $response = $secureResponse->getResponse();
             if ($response->getStatusCode() !== 200) {
                 return new FeedValidationResult(false, 'HTTP error: ' . $response->getStatusCode());
             }
 
-            $content = $response->getContent();
+            // Step 3: Parse and validate feed content
+            $content = $secureResponse->getContent();
             $feed = Reader::importString($content);
+            
+            $this->logger->info('Feed validation successful', [
+                'url' => $url,
+                'feed_title' => $feed->getTitle(),
+                'content_length' => strlen($content)
+            ]);
             
             return new FeedValidationResult(true, 'Feed is valid', $feed);
         } catch (\Exception $e) {
+            $this->logger->error('Feed validation error', [
+                'url' => $url,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
             return new FeedValidationResult(false, 'Error parsing feed: ' . $e->getMessage());
         }
     }
 
     public function parseFeed(string $url): ParsedFeed
     {
-        $response = $this->httpClient->request('GET', $url, [
-            'timeout' => 10,
+        // Step 1: Validate URL for security compliance
+        $urlValidation = $this->urlValidator->validateUrl($url);
+        if (!$urlValidation->isValid()) {
+            $this->logger->warning('Feed parsing failed due to URL security violation', [
+                'url' => $url,
+                'reason' => $urlValidation->getMessage()
+            ]);
+            throw new \InvalidArgumentException('URL validation failed: ' . $urlValidation->getMessage());
+        }
+
+        // Step 2: Make secure HTTP request
+        $secureResponse = $this->secureHttpClient->request('GET', $url, [
             'headers' => [
-                'User-Agent' => 'RSS Reader/1.0',
+                'Accept' => 'application/rss+xml, application/atom+xml, application/xml, text/xml',
             ],
         ]);
 
-        $content = $response->getContent();
+        if (!$secureResponse->isSuccess()) {
+            throw new \RuntimeException('HTTP request failed: ' . $secureResponse->getError());
+        }
+
+        $response = $secureResponse->getResponse();
+        if ($response->getStatusCode() !== 200) {
+            throw new \RuntimeException('HTTP error: ' . $response->getStatusCode());
+        }
+
+        // Step 3: Parse feed content
+        $content = $secureResponse->getContent();
         $feed = Reader::importString($content);
+
+        $this->logger->info('Feed parsing successful', [
+            'url' => $url,
+            'feed_title' => $feed->getTitle(),
+            'content_length' => strlen($content)
+        ]);
 
         return new ParsedFeed($feed);
     }
