@@ -34,20 +34,20 @@
                                 {% for subscription in subscriptions %}
                                     <tr>
                                         <td>
-                                            <strong>{{ subscription.feed.title }}</strong>
+                                            <strong>{{ subscription.feed.title|e }}</strong>
                                             <br>
-                                            <small class="text-muted">{{ subscription.feed.url }}</small>
+                                            <small class="text-muted">{{ subscription.feed.url|e }}</small>
                                         </td>
                                         <td>
                                             {% if subscription.category %}
-                                                <span class="badge bg-secondary">{{ subscription.category.name }}</span>
+                                                <span class="badge bg-secondary">{{ subscription.category.name|e }}</span>
                                             {% else %}
                                                 <span class="text-muted">Uncategorized</span>
                                             {% endif %}
                                         </td>
                                         <td>
                                             <span class="badge {% if subscription.feed.status == 'active' %}bg-success{% else %}bg-danger{% endif %}">
-                                                {{ subscription.feed.status }}
+                                                {{ subscription.feed.status|e }}
                                             </span>
                                         </td>
                                         <td>

@@ -1,5 +1,6 @@
 twig:
     file_name_pattern: '*.twig'
+    autoescape: 'html'
 
 when@test:
     twig:
