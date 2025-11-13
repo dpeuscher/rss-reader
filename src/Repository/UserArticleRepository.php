@@ -31,4 +31,36 @@ class UserArticleRepository extends ServiceEntityRepository
             ->getQuery()
             ->getSingleScalarResult();
     }
+
+    public function findRecentUserActivity($user, int $limit = 50): array
+    {
+        return $this->createQueryBuilder('ua')
+            ->join('ua.article', 'a')
+            ->where('ua.user = :user')
+            ->setParameter('user', $user)
+            ->orderBy('ua.id', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function getUserFeedEngagement($user, $feed): array
+    {
+        $qb = $this->createQueryBuilder('ua')
+            ->select('COUNT(ua.id) as total')
+            ->addSelect('SUM(CASE WHEN ua.isRead = true OR ua.isStarred = true THEN 1 ELSE 0 END) as engaged')
+            ->join('ua.article', 'a')
+            ->where('ua.user = :user')
+            ->andWhere('a.feed = :feed')
+            ->setParameter('user', $user)
+            ->setParameter('feed', $feed)
+            ->getQuery();
+
+        $result = $qb->getSingleResult();
+        
+        return [
+            'total' => (int) $result['total'],
+            'engaged' => (int) $result['engaged']
+        ];
+    }
 }

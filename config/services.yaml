@@ -4,6 +4,8 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
+    openai_api_key: '%env(OPENAI_API_KEY)%'
+    anthropic_api_key: '%env(ANTHROPIC_API_KEY)%'
 
 services:
     # default configuration for services in *this* file
@@ -19,6 +21,12 @@ services:
             - '../src/DependencyInjection/'
             - '../src/Entity/'
             - '../src/Kernel.php'
+
+    # AI Services Configuration
+    App\Service\AI\SummarizationService:
+        arguments:
+            $openaiApiKey: '%openai_api_key%'
+            $anthropicApiKey: '%anthropic_api_key%'
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

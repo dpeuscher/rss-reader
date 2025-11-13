@@ -30,6 +30,12 @@ class UserArticle
     #[ORM\Column(type: 'datetime', nullable: true)]
     private ?\DateTimeInterface $readAt = null;
 
+    #[ORM\Column(type: 'float', nullable: true)]
+    private ?float $personalizationScore = null;
+
+    #[ORM\Column(type: 'json', nullable: true)]
+    private ?array $interactionData = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -90,6 +96,28 @@ class UserArticle
     public function setReadAt(?\DateTimeInterface $readAt): static
     {
         $this->readAt = $readAt;
+        return $this;
+    }
+
+    public function getPersonalizationScore(): ?float
+    {
+        return $this->personalizationScore;
+    }
+
+    public function setPersonalizationScore(?float $personalizationScore): static
+    {
+        $this->personalizationScore = $personalizationScore;
+        return $this;
+    }
+
+    public function getInteractionData(): ?array
+    {
+        return $this->interactionData;
+    }
+
+    public function setInteractionData(?array $interactionData): static
+    {
+        $this->interactionData = $interactionData;
         return $this;
     }
 }
