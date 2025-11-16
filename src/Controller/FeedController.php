@@ -64,24 +64,31 @@ class FeedController extends AbstractController
             }
         }
 
-        // Create or update feed
-        $feed = $existingFeed ?: new Feed();
-        $feed->setUrl($url);
-        
-        $parsedFeed = $feedParser->parseFeed($url);
-        $feedParser->updateFeedFromParsed($feed, $parsedFeed);
-        
-        $entityManager->persist($feed);
-        
-        // Create subscription
-        $subscription = new Subscription();
-        $subscription->setUser($this->getUser());
-        $subscription->setFeed($feed);
-        
-        $entityManager->persist($subscription);
-        $entityManager->flush();
-        
-        return $this->json(['success' => 'Feed added successfully']);
+        try {
+            // Create or update feed
+            $feed = $existingFeed ?: new Feed();
+            $feed->setUrl($url);
+            
+            $parsedFeed = $feedParser->parseFeed($url);
+            $feedParser->updateFeedFromParsed($feed, $parsedFeed);
+            
+            $entityManager->persist($feed);
+            
+            // Create subscription
+            $subscription = new Subscription();
+            $subscription->setUser($this->getUser());
+            $subscription->setFeed($feed);
+            
+            $entityManager->persist($subscription);
+            $entityManager->flush();
+            
+            return $this->json(['success' => 'Feed added successfully']);
+        } catch (\InvalidArgumentException $e) {
+            // Handle URL validation failures from parseFeed()
+            return $this->json(['error' => 'Invalid URL: ' . $e->getMessage()], 400);
+        } catch (\Exception $e) {
+            return $this->json(['error' => 'Error adding feed: ' . $e->getMessage()], 500);
+        }
     }
 
     #[Route('/{id}/preview', name: 'app_feeds_preview', methods: ['GET'])]
@@ -90,20 +97,37 @@ class FeedController extends AbstractController
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
         
         try {
-            $validationResult = $feedParser->validateFeed($id);
+            // Decode the URL parameter to handle encoded characters and prevent bypass attempts
+            $decodedUrl = urldecode($id);
+            
+            // Validate the decoded URL format first
+            if (!filter_var($decodedUrl, FILTER_VALIDATE_URL)) {
+                return $this->json(['error' => 'Invalid URL format provided'], 400);
+            }
+            
+            // Additional check for potential path traversal attempts in encoded form
+            if (strpos($id, '%2E%2E') !== false || strpos($id, '..') !== false) {
+                return $this->json(['error' => 'Path traversal attempt detected'], 400);
+            }
+            
+            // The route parameter is treated as a URL - validate it for SSRF protection
+            $validationResult = $feedParser->validateFeed($decodedUrl);
             
             if (!$validationResult->isValid()) {
                 return $this->json(['error' => $validationResult->getMessage()], 400);
             }
             
-            $parsedFeed = $feedParser->parseFeed($id);
+            $parsedFeed = $feedParser->parseFeed($decodedUrl);
             $articles = $feedParser->extractArticles($parsedFeed);
             
             return $this->render('feed/preview.html.twig', [
-                'feed_url' => $id,
+                'feed_url' => $decodedUrl,
                 'feed' => $parsedFeed->getFeed(),
                 'articles' => array_slice($articles, 0, 5), // Show first 5 articles
             ]);
+        } catch (\InvalidArgumentException $e) {
+            // Handle URL validation failures from parseFeed()
+            return $this->json(['error' => 'Invalid URL: ' . $e->getMessage()], 400);
         } catch (\Exception $e) {
             return $this->json(['error' => 'Error previewing feed: ' . $e->getMessage()], 500);
         }
