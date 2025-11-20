@@ -68,7 +68,9 @@ class FeedController extends AbstractController
         $feed = $existingFeed ?: new Feed();
         $feed->setUrl($url);
         
-        $parsedFeed = $feedParser->parseFeed($url);
+        // Use the feed's cache duration, or default for new feeds
+        $cacheDuration = $feed->getCacheDuration();
+        $parsedFeed = $feedParser->parseFeed($url, $cacheDuration);
         $feedParser->updateFeedFromParsed($feed, $parsedFeed);
         
         $entityManager->persist($feed);
@@ -96,7 +98,8 @@ class FeedController extends AbstractController
                 return $this->json(['error' => $validationResult->getMessage()], 400);
             }
             
-            $parsedFeed = $feedParser->parseFeed($id);
+            // For preview, use default cache duration (15 minutes)
+            $parsedFeed = $feedParser->parseFeed($id, 900);
             $articles = $feedParser->extractArticles($parsedFeed);
             
             return $this->render('feed/preview.html.twig', [

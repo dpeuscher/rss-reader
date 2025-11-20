@@ -22,3 +22,9 @@ services:
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
+
+    # Feed cache service configuration
+    App\Service\FeedCacheService:
+        arguments:
+            $feedCache: '@feed.cache'
+            $logger: '@logger'
