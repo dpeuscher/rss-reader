@@ -5,6 +5,28 @@
     <div class="card-body">
         <p><strong>Description:</strong> {{ feed.description }}</p>
         <p><strong>Site URL:</strong> <a href="{{ feed.link }}" target="_blank">{{ feed.link }}</a></p>
+        {% if feedFormat is defined %}
+            {% set formatClass = 'bg-info' %}
+            {% if feedFormat == 'RSS_2_0' %}
+                {% set formatClass = 'bg-success' %}
+            {% elseif feedFormat == 'ATOM_1_0' %}
+                {% set formatClass = 'bg-primary' %}
+            {% elseif feedFormat == 'JSON_FEED' %}
+                {% set formatClass = 'bg-warning text-dark' %}
+            {% elseif feedFormat == 'RSS_1_0' %}
+                {% set formatClass = 'bg-success' %}
+            {% endif %}
+            
+            {% set formatDisplay = {
+                'RSS_2_0': 'RSS 2.0',
+                'RSS_1_0': 'RSS 1.0',
+                'ATOM_1_0': 'Atom 1.0',
+                'JSON_FEED': 'JSON Feed',
+                'UNKNOWN': 'Unknown'
+            } %}
+            
+            <p><strong>Format:</strong> <span class="badge {{ formatClass }}">{{ formatDisplay[feedFormat] ?? 'Unknown' }}</span></p>
+        {% endif %}
         
         <h6>Recent Articles ({{ articles|length }}):</h6>
         {% if articles|length > 0 %}

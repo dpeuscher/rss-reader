@@ -30,6 +30,12 @@ class Article
     #[ORM\Column(type: 'datetime')]
     private ?\DateTimeInterface $publishedAt = null;
 
+    #[ORM\Column(type: 'datetime', nullable: true)]
+    private ?\DateTimeInterface $updatedAt = null;
+
+    #[ORM\Column(length: 20, nullable: true)]
+    private ?string $contentType = null;
+
     #[ORM\Column(length: 500)]
     private ?string $url = null;
 
@@ -40,9 +46,21 @@ class Article
     #[ORM\OneToMany(mappedBy: 'article', targetEntity: UserArticle::class, orphanRemoval: true)]
     private Collection $userArticles;
 
+    #[ORM\OneToMany(mappedBy: 'article', targetEntity: ArticleAuthor::class, orphanRemoval: true)]
+    private Collection $authors;
+
+    #[ORM\OneToMany(mappedBy: 'article', targetEntity: ArticleCategory::class, orphanRemoval: true)]
+    private Collection $categories;
+
+    #[ORM\OneToMany(mappedBy: 'article', targetEntity: ArticleEnclosure::class, orphanRemoval: true)]
+    private Collection $enclosures;
+
     public function __construct()
     {
         $this->userArticles = new ArrayCollection();
+        $this->authors = new ArrayCollection();
+        $this->categories = new ArrayCollection();
+        $this->enclosures = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -146,6 +164,100 @@ class Article
         if ($this->userArticles->removeElement($userArticle)) {
             if ($userArticle->getArticle() === $this) {
                 $userArticle->setArticle(null);
+            }
+        }
+        return $this;
+    }
+
+    public function getUpdatedAt(): ?\DateTimeInterface
+    {
+        return $this->updatedAt;
+    }
+
+    public function setUpdatedAt(?\DateTimeInterface $updatedAt): static
+    {
+        $this->updatedAt = $updatedAt;
+        return $this;
+    }
+
+    public function getContentType(): ?string
+    {
+        return $this->contentType;
+    }
+
+    public function setContentType(?string $contentType): static
+    {
+        $this->contentType = $contentType;
+        return $this;
+    }
+
+    public function getAuthors(): Collection
+    {
+        return $this->authors;
+    }
+
+    public function addAuthor(ArticleAuthor $author): static
+    {
+        if (!$this->authors->contains($author)) {
+            $this->authors->add($author);
+            $author->setArticle($this);
+        }
+        return $this;
+    }
+
+    public function removeAuthor(ArticleAuthor $author): static
+    {
+        if ($this->authors->removeElement($author)) {
+            if ($author->getArticle() === $this) {
+                $author->setArticle(null);
+            }
+        }
+        return $this;
+    }
+
+    public function getCategories(): Collection
+    {
+        return $this->categories;
+    }
+
+    public function addCategory(ArticleCategory $category): static
+    {
+        if (!$this->categories->contains($category)) {
+            $this->categories->add($category);
+            $category->setArticle($this);
+        }
+        return $this;
+    }
+
+    public function removeCategory(ArticleCategory $category): static
+    {
+        if ($this->categories->removeElement($category)) {
+            if ($category->getArticle() === $this) {
+                $category->setArticle(null);
+            }
+        }
+        return $this;
+    }
+
+    public function getEnclosures(): Collection
+    {
+        return $this->enclosures;
+    }
+
+    public function addEnclosure(ArticleEnclosure $enclosure): static
+    {
+        if (!$this->enclosures->contains($enclosure)) {
+            $this->enclosures->add($enclosure);
+            $enclosure->setArticle($this);
+        }
+        return $this;
+    }
+
+    public function removeEnclosure(ArticleEnclosure $enclosure): static
+    {
+        if ($this->enclosures->removeElement($enclosure)) {
+            if ($enclosure->getArticle() === $this) {
+                $enclosure->setArticle(null);
             }
         }
         return $this;

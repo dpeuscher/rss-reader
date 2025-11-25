@@ -36,6 +36,12 @@ class Feed
     #[ORM\Column(type: 'integer', options: ['default' => 60])]
     private int $refreshInterval = 60;
 
+    #[ORM\Column(length: 20, options: ['default' => 'UNKNOWN'])]
+    private string $feedFormat = 'UNKNOWN';
+
+    #[ORM\Column(length: 10, nullable: true)]
+    private ?string $language = null;
+
     #[ORM\OneToMany(mappedBy: 'feed', targetEntity: Article::class, orphanRemoval: true)]
     private Collection $articles;
 
@@ -176,6 +182,28 @@ class Feed
                 $subscription->setFeed(null);
             }
         }
+        return $this;
+    }
+
+    public function getFeedFormat(): string
+    {
+        return $this->feedFormat;
+    }
+
+    public function setFeedFormat(string $feedFormat): static
+    {
+        $this->feedFormat = $feedFormat;
+        return $this;
+    }
+
+    public function getLanguage(): ?string
+    {
+        return $this->language;
+    }
+
+    public function setLanguage(?string $language): static
+    {
+        $this->language = $language;
         return $this;
     }
 }
