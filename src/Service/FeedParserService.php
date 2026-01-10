@@ -13,45 +13,78 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 class FeedParserService
 {
     private HttpClientInterface $httpClient;
+    private UrlSecurityValidator $urlValidator;
 
-    public function __construct(HttpClientInterface $httpClient = null)
+    public function __construct(HttpClientInterface $httpClient = null, UrlSecurityValidator $urlValidator = null)
     {
-        $this->httpClient = $httpClient ?: HttpClient::create();
+        $this->urlValidator = $urlValidator ?: new UrlSecurityValidator();
+        $this->httpClient = $httpClient ?: $this->createSecureHttpClient();
+    }
+
+    private function createSecureHttpClient(): HttpClientInterface
+    {
+        return HttpClient::create($this->urlValidator->getSecureHttpClientOptions());
     }
 
     public function validateFeed(string $url): FeedValidationResult
     {
         try {
             $response = $this->httpClient->request('GET', $url, [
-                'timeout' => 10,
-                'headers' => [
-                    'User-Agent' => 'RSS Reader/1.0',
-                ],
+                'max_redirects' => 3,
+                'stream' => false,
             ]);
 
             if ($response->getStatusCode() !== 200) {
-                return new FeedValidationResult(false, 'HTTP error: ' . $response->getStatusCode());
+                return new FeedValidationResult(false, 'Error parsing feed');
+            }
+
+            // Check response size before getting content
+            $headers = $response->getHeaders(false);
+            if (isset($headers['content-length'][0])) {
+                $contentLength = (int) $headers['content-length'][0];
+                if ($contentLength > $this->urlValidator->getMaxResponseSize()) {
+                    return new FeedValidationResult(false, 'Error parsing feed');
+                }
             }
 
             $content = $response->getContent();
+            
+            // Additional size check after content download
+            if (strlen($content) > $this->urlValidator->getMaxResponseSize()) {
+                return new FeedValidationResult(false, 'Error parsing feed');
+            }
+
             $feed = Reader::importString($content);
             
             return new FeedValidationResult(true, 'Feed is valid', $feed);
         } catch (\Exception $e) {
-            return new FeedValidationResult(false, 'Error parsing feed: ' . $e->getMessage());
+            return new FeedValidationResult(false, 'Error parsing feed');
         }
     }
 
     public function parseFeed(string $url): ParsedFeed
     {
         $response = $this->httpClient->request('GET', $url, [
-            'timeout' => 10,
-            'headers' => [
-                'User-Agent' => 'RSS Reader/1.0',
-            ],
+            'max_redirects' => 3,
+            'stream' => false,
         ]);
 
+        // Check response size before getting content
+        $headers = $response->getHeaders(false);
+        if (isset($headers['content-length'][0])) {
+            $contentLength = (int) $headers['content-length'][0];
+            if ($contentLength > $this->urlValidator->getMaxResponseSize()) {
+                throw new \Exception('Response too large');
+            }
+        }
+
         $content = $response->getContent();
+        
+        // Additional size check after content download
+        if (strlen($content) > $this->urlValidator->getMaxResponseSize()) {
+            throw new \Exception('Response too large');
+        }
+
         $feed = Reader::importString($content);
 
         return new ParsedFeed($feed);

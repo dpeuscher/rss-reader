@@ -6,6 +6,7 @@ use App\Entity\Feed;
 use App\Entity\Subscription;
 use App\Repository\SubscriptionRepository;
 use App\Service\FeedParserService;
+use App\Service\UrlSecurityValidator;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -32,6 +33,7 @@ class FeedController extends AbstractController
     public function add(
         Request $request,
         FeedParserService $feedParser,
+        UrlSecurityValidator $urlValidator,
         EntityManagerInterface $entityManager,
         SubscriptionRepository $subscriptionRepo
     ): Response {
@@ -41,6 +43,12 @@ class FeedController extends AbstractController
         
         if (!$url) {
             return $this->json(['error' => 'URL is required'], 400);
+        }
+
+        // Security validation first
+        $securityValidation = $urlValidator->validateUrl($url);
+        if (!$securityValidation->isValid()) {
+            return $this->json(['error' => $securityValidation->getMessage()], 400);
         }
 
         // Validate feed
@@ -85,11 +93,17 @@ class FeedController extends AbstractController
     }
 
     #[Route('/{id}/preview', name: 'app_feeds_preview', methods: ['GET'])]
-    public function preview(string $id, FeedParserService $feedParser): Response
+    public function preview(string $id, FeedParserService $feedParser, UrlSecurityValidator $urlValidator): Response
     {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_FULLY');
         
         try {
+            // Security validation first - CRITICAL SSRF PROTECTION
+            $securityValidation = $urlValidator->validateUrl($id);
+            if (!$securityValidation->isValid()) {
+                return $this->json(['error' => $securityValidation->getMessage()], 400);
+            }
+
             $validationResult = $feedParser->validateFeed($id);
             
             if (!$validationResult->isValid()) {
@@ -105,7 +119,7 @@ class FeedController extends AbstractController
                 'articles' => array_slice($articles, 0, 5), // Show first 5 articles
             ]);
         } catch (\Exception $e) {
-            return $this->json(['error' => 'Error previewing feed: ' . $e->getMessage()], 500);
+            return $this->json(['error' => 'Error previewing feed'], 500);
         }
     }
 
