@@ -7,27 +7,34 @@ use App\Entity\Feed;
 use Laminas\Feed\Reader\Reader;
 use Laminas\Feed\Reader\Entry\EntryInterface;
 use Laminas\Feed\Reader\FeedInterface;
-use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class FeedParserService
 {
     private HttpClientInterface $httpClient;
+    private UrlSecurityValidator $urlValidator;
 
-    public function __construct(HttpClientInterface $httpClient = null)
-    {
-        $this->httpClient = $httpClient ?: HttpClient::create();
+    public function __construct(
+        SecureHttpClientFactory $httpClientFactory,
+        UrlSecurityValidator $urlValidator
+    ) {
+        $this->httpClient = $httpClientFactory->createSecureClient();
+        $this->urlValidator = $urlValidator;
     }
 
     public function validateFeed(string $url): FeedValidationResult
     {
         try {
-            $response = $this->httpClient->request('GET', $url, [
-                'timeout' => 10,
-                'headers' => [
-                    'User-Agent' => 'RSS Reader/1.0',
-                ],
-            ]);
+            // First validate the URL for security
+            $urlValidation = $this->urlValidator->validateUrl($url);
+            if (!$urlValidation->isValid()) {
+                return new FeedValidationResult(false, $urlValidation->getMessage());
+            }
+
+            // Use the validated URL for the request
+            $validatedUrl = $urlValidation->getValidatedUrl() ?? $url;
+            
+            $response = $this->httpClient->request('GET', $validatedUrl);
 
             if ($response->getStatusCode() !== 200) {
                 return new FeedValidationResult(false, 'HTTP error: ' . $response->getStatusCode());
@@ -37,6 +44,12 @@ class FeedParserService
             $feed = Reader::importString($content);
             
             return new FeedValidationResult(true, 'Feed is valid', $feed);
+        } catch (\InvalidArgumentException $e) {
+            // URL validation errors
+            return new FeedValidationResult(false, $e->getMessage());
+        } catch (\RuntimeException $e) {
+            // Response size or timeout errors
+            return new FeedValidationResult(false, 'Request failed: ' . $e->getMessage());
         } catch (\Exception $e) {
             return new FeedValidationResult(false, 'Error parsing feed: ' . $e->getMessage());
         }
@@ -44,12 +57,16 @@ class FeedParserService
 
     public function parseFeed(string $url): ParsedFeed
     {
-        $response = $this->httpClient->request('GET', $url, [
-            'timeout' => 10,
-            'headers' => [
-                'User-Agent' => 'RSS Reader/1.0',
-            ],
-        ]);
+        // Validate the URL for security
+        $urlValidation = $this->urlValidator->validateUrl($url);
+        if (!$urlValidation->isValid()) {
+            throw new \InvalidArgumentException($urlValidation->getMessage());
+        }
+
+        // Use the validated URL for the request
+        $validatedUrl = $urlValidation->getValidatedUrl() ?? $url;
+        
+        $response = $this->httpClient->request('GET', $validatedUrl);
 
         $content = $response->getContent();
         $feed = Reader::importString($content);
