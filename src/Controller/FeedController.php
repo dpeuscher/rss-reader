@@ -105,7 +105,7 @@ class FeedController extends AbstractController
                 'articles' => array_slice($articles, 0, 5), // Show first 5 articles
             ]);
         } catch (\Exception $e) {
-            return $this->json(['error' => 'Error previewing feed: ' . $e->getMessage()], 500);
+            return $this->json(['error' => 'Unable to preview feed'], 500);
         }
     }
 
