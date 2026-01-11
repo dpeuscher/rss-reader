@@ -64,24 +64,30 @@ class FeedController extends AbstractController
             }
         }
 
-        // Create or update feed
-        $feed = $existingFeed ?: new Feed();
-        $feed->setUrl($url);
-        
-        $parsedFeed = $feedParser->parseFeed($url);
-        $feedParser->updateFeedFromParsed($feed, $parsedFeed);
-        
-        $entityManager->persist($feed);
-        
-        // Create subscription
-        $subscription = new Subscription();
-        $subscription->setUser($this->getUser());
-        $subscription->setFeed($feed);
-        
-        $entityManager->persist($subscription);
-        $entityManager->flush();
-        
-        return $this->json(['success' => 'Feed added successfully']);
+        try {
+            // Create or update feed
+            $feed = $existingFeed ?: new Feed();
+            $feed->setUrl($url);
+            
+            $parsedFeed = $feedParser->parseFeed($url);
+            $feedParser->updateFeedFromParsed($feed, $parsedFeed);
+            
+            $entityManager->persist($feed);
+            
+            // Create subscription
+            $subscription = new Subscription();
+            $subscription->setUser($this->getUser());
+            $subscription->setFeed($feed);
+            
+            $entityManager->persist($subscription);
+            $entityManager->flush();
+            
+            return $this->json(['success' => 'Feed added successfully']);
+        } catch (\InvalidArgumentException $e) {
+            return $this->json(['error' => $e->getMessage()], 400);
+        } catch (\Exception $e) {
+            return $this->json(['error' => 'Error adding feed: ' . $e->getMessage()], 500);
+        }
     }
 
     #[Route('/{id}/preview', name: 'app_feeds_preview', methods: ['GET'])]
@@ -104,6 +110,8 @@ class FeedController extends AbstractController
                 'feed' => $parsedFeed->getFeed(),
                 'articles' => array_slice($articles, 0, 5), // Show first 5 articles
             ]);
+        } catch (\InvalidArgumentException $e) {
+            return $this->json(['error' => $e->getMessage()], 400);
         } catch (\Exception $e) {
             return $this->json(['error' => 'Error previewing feed: ' . $e->getMessage()], 500);
         }
