@@ -4,6 +4,7 @@ namespace App\Service;
 
 use App\Entity\Article;
 use App\Entity\Feed;
+use App\Service\Security\UrlSecurityServiceInterface;
 use Laminas\Feed\Reader\Reader;
 use Laminas\Feed\Reader\Entry\EntryInterface;
 use Laminas\Feed\Reader\FeedInterface;
@@ -13,17 +14,28 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 class FeedParserService
 {
     private HttpClientInterface $httpClient;
+    private UrlSecurityServiceInterface $urlSecurityService;
 
-    public function __construct(HttpClientInterface $httpClient = null)
-    {
+    public function __construct(
+        UrlSecurityServiceInterface $urlSecurityService,
+        HttpClientInterface $httpClient = null
+    ) {
+        $this->urlSecurityService = $urlSecurityService;
         $this->httpClient = $httpClient ?: HttpClient::create();
     }
 
     public function validateFeed(string $url): FeedValidationResult
     {
+        // Security validation first
+        $securityValidation = $this->urlSecurityService->validateUrl($url);
+        if (!$securityValidation->isValid()) {
+            return new FeedValidationResult(false, 'Security validation failed: ' . $securityValidation->getMessage());
+        }
+
         try {
             $response = $this->httpClient->request('GET', $url, [
                 'timeout' => 10,
+                'max_redirects' => 3, // Limit redirects
                 'headers' => [
                     'User-Agent' => 'RSS Reader/1.0',
                 ],
@@ -44,8 +56,15 @@ class FeedParserService
 
     public function parseFeed(string $url): ParsedFeed
     {
+        // Security validation first
+        $securityValidation = $this->urlSecurityService->validateUrl($url);
+        if (!$securityValidation->isValid()) {
+            throw new \InvalidArgumentException('Security validation failed: ' . $securityValidation->getMessage());
+        }
+
         $response = $this->httpClient->request('GET', $url, [
             'timeout' => 10,
+            'max_redirects' => 3, // Limit redirects
             'headers' => [
                 'User-Agent' => 'RSS Reader/1.0',
             ],
