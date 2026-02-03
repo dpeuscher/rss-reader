@@ -5,6 +5,22 @@
         <title>{% block title %}RSS Reader{% endblock %}</title>
         <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>📰</text></svg>">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        
+        <!-- PWA Meta Tags -->
+        <meta name="description" content="Progressive Web App for reading RSS feeds offline">
+        <meta name="theme-color" content="#212529">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+        <meta name="apple-mobile-web-app-title" content="RSS Reader">
+        <meta name="msapplication-TileColor" content="#212529">
+        <meta name="msapplication-config" content="none">
+        
+        <!-- PWA Manifest -->
+        <link rel="manifest" href="{{ asset('manifest.json') }}">
+        
+        <!-- Apple Touch Icons -->
+        <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' fill='%23212529'/><text x='96' y='120' font-size='96' text-anchor='middle' fill='white'>📰</text></svg>">
+        
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
         <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
         {% block stylesheets %}
@@ -46,6 +62,90 @@
         </div>
 
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        
+        <!-- Service Worker Registration -->
+        <script>
+        if ('serviceWorker' in navigator) {
+          window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js')
+              .then(registration => {
+                console.log('Service Worker registered successfully:', registration.scope);
+                
+                // Check for updates
+                registration.addEventListener('updatefound', () => {
+                  const newWorker = registration.installing;
+                  newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                      // New service worker is available, show update prompt
+                      if (confirm('New version available! Refresh to update?')) {
+                        window.location.reload();
+                      }
+                    }
+                  });
+                });
+              })
+              .catch(error => {
+                console.error('Service Worker registration failed:', error);
+              });
+          });
+        } else {
+          console.log('Service Worker not supported');
+        }
+        
+        // Install prompt handling
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+          console.log('Install prompt triggered');
+          e.preventDefault();
+          deferredPrompt = e;
+          
+          // Show custom install button or banner
+          const installBanner = document.createElement('div');
+          installBanner.innerHTML = `
+            <div class="alert alert-info alert-dismissible d-flex align-items-center" role="alert">
+              <i class="bi bi-download me-2"></i>
+              <div class="flex-grow-1">
+                <strong>Install RSS Reader</strong> - Add to your home screen for a better experience!
+              </div>
+              <button type="button" class="btn btn-outline-primary btn-sm me-2" onclick="installPWA()">
+                Install
+              </button>
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+          `;
+          
+          const container = document.querySelector('.container');
+          if (container) {
+            container.insertBefore(installBanner, container.firstChild);
+          }
+        });
+        
+        // Install PWA function
+        function installPWA() {
+          if (deferredPrompt) {
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((choiceResult) => {
+              if (choiceResult.outcome === 'accepted') {
+                console.log('PWA installation accepted');
+              } else {
+                console.log('PWA installation dismissed');
+              }
+              deferredPrompt = null;
+            });
+          }
+        }
+        
+        // Handle app installed event
+        window.addEventListener('appinstalled', (evt) => {
+          console.log('RSS Reader PWA was installed');
+          // Hide install promotion
+          const installBanner = document.querySelector('.alert-info');
+          if (installBanner) {
+            installBanner.remove();
+          }
+        });
+        </script>
+        
         {% block javascripts %}
         {% endblock %}
     </body>

@@ -1,0 +1,63 @@
+{
+  "name": "RSS Reader",
+  "short_name": "RSS Reader",
+  "description": "Progressive Web App for reading RSS feeds offline",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#212529",
+  "theme_color": "#212529",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'><rect width='128' height='128' fill='%23212529'/><text x='64' y='80' font-size='64' text-anchor='middle' fill='white'>📰</text></svg>",
+      "sizes": "128x128",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' fill='%23212529'/><text x='96' y='120' font-size='96' text-anchor='middle' fill='white'>📰</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' fill='%23212529'/><text x='256' y='320' font-size='256' text-anchor='middle' fill='white'>📰</text></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["news", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "View your RSS feed dashboard",
+      "url": "/dashboard",
+      "icons": [
+        {
+          "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'><rect width='128' height='128' fill='%23212529'/><text x='64' y='80' font-size='64' text-anchor='middle' fill='white'>🏠</text></svg>",
+          "sizes": "128x128",
+          "type": "image/svg+xml"
+        }
+      ]
+    },
+    {
+      "name": "Feeds",
+      "short_name": "Feeds",
+      "description": "Manage your RSS feeds",
+      "url": "/feeds",
+      "icons": [
+        {
+          "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'><rect width='128' height='128' fill='%23212529'/><text x='64' y='80' font-size='64' text-anchor='middle' fill='white'>📡</text></svg>",
+          "sizes": "128x128",
+          "type": "image/svg+xml"
+        }
+      ]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
+}
